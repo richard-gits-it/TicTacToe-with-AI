@@ -4,7 +4,7 @@ namespace ServerProject;
 
 public partial class ServerForm : Form
 {
-    Server server = new Server(100000);
+    Server server = new Server(10000);
     public ServerForm()
     {
         InitializeComponent();

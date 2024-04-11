@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Human;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +23,9 @@ namespace ServerProject
 
         public delegate void LocalServerMessage(string message);
         public event LocalServerMessage? LocalServerMessageEvent;
+
+        //initialize the game state
+        GameState gameState = new GameState(new HumanPlayer(1), new HumanPlayer(-1));
 
         //construct the server and tell whih port to start on
         public Server(int port)
@@ -141,10 +145,10 @@ namespace ServerProject
                     {
                         // Assuming tmpMessage.Payload is a serialized GameState object
                         // Deserialize the GameState object
-                        var gameState = JsonConvert.DeserializeObject<GameState>(tmpMessage.Payload);
-                        // Now you have the GameState object
+                        var board = JsonConvert.DeserializeObject<int[,]>(tmpMessage.Payload);
+                        gameState.board = board;
                         // Send the GameState to this specific client
-                        await SendGameStateToClient(client, gameState);
+                        await BroadcastToAllClients(tmpMessage);
                     }
                 }
                 //connection is lost

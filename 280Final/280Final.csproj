@@ -12,4 +12,16 @@
     <PackageReference Include="MaterialDesignThemes" Version="5.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\HumanPlayer\Human.csproj" />
+    <ProjectReference Include="..\TCP280Project\TCP280Project.csproj" />
+    <ProjectReference Include="..\TicTacToe280Project\TicTacToe280Project.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Human">
+      <HintPath>..\..\richard-gits-it\TicTacToe280Project\HumanPlayer\bin\Debug\net7.0\Human.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

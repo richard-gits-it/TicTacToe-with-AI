@@ -60,7 +60,7 @@ namespace ClientProject
 
                 Packet280 packet = new Packet280();
                 //important to know a file is coming across
-                packet.ContentType = MessageType.File;
+                //packet.ContentType = MessageType.File;
                 packet.Payload = obj.JsonSerialized();
                 await client.SendMessage(packet);
             }

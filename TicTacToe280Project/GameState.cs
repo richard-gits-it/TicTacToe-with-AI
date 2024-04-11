@@ -190,6 +190,22 @@ namespace TicTacToe280Project
 
             PlayOpponentTurn();
         }
+
+        public void PlayMyTurn(Tuple<int, int> move)
+        {
+            if (winner != null)
+                return;
+
+            ITicTacToePlayer p = players.Dequeue();
+            if (availableMoves.Contains(move))
+            {
+                this.board[move.Item1, move.Item2] = p.Symbol();
+                this.availableMoves.Remove(move);
+            }
+            players.Enqueue(p);
+            UpdateBothPlayers();
+            CheckForWinner();
+        }
         public void UpdateBothPlayers()
         {
             ITicTacToePlayer player = players.Dequeue();
