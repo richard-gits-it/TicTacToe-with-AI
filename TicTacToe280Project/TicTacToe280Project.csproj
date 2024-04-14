@@ -10,10 +10,4 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="Human">
-      <HintPath>..\..\richard-gits-it\TicTacToe280Project\HumanPlayer\bin\Debug\net7.0\Human.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
 </Project>

@@ -39,6 +39,9 @@ namespace ProjectDebugHelper
             _280Final.MainWindow gameWindow1 = new _280Final.MainWindow();
             gameWindow1.Show();
 
+            //run window of 280Final
+            _280Final.MainWindow gameWindow2 = new _280Final.MainWindow();
+            gameWindow2.Show();
         }
     }
 }

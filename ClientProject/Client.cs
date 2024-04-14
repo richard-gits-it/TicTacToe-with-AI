@@ -17,6 +17,26 @@ public class Client
     public delegate void ReceivePacketMessage(Packet280 packet);
     public event ReceivePacketMessage? ReceivePacket;
 
+    public int[,] board = new int[3, 3];
+    List<Tuple<int, int>> availableMoves = new List<Tuple<int, int>>();
+
+    //check available moves from the board
+    public List<Tuple<int, int>> CheckAvailableMoves()
+    {
+        availableMoves.Clear();
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                if (board[i, j] == 0)
+                {
+                    availableMoves.Add(new Tuple<int, int>(i, j));
+                }
+            }
+        }
+        return availableMoves;
+    }
+
     public Client(string host, int port)
     {
         //makes the connection, binds to the ip address and port
@@ -80,12 +100,12 @@ public class Client
     {
         try
         {
-            //serialize the GameState object to JSON
+            //serialize the Move object to JSON
             var gameStateJson = JsonConvert.SerializeObject(gameState);
-            //create a new Packet280 object with MessageType.GameState and the serialized GameState as payload
+            //create a new Packet280 object with MessageType.Move and the serialized Move as payload
             Packet280 packet = new Packet280
             {
-                ContentType = MessageType.GameState,
+                ContentType = MessageType.Move,
                 Payload = gameStateJson
             };
             // Serialize the Packet280 object to JSON
@@ -111,12 +131,14 @@ public class Client
             int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
             var stringMsg = Encoding.UTF8.GetString(buffer, 0, bytesRead);
             var msg = JsonConvert.DeserializeObject<Packet280>(stringMsg);
-            if (msg.ContentType == MessageType.GameState)
+            if (msg.ContentType == MessageType.Move)
             {
-                // Deserialize the GameState object from the payload
-                var gameState = JsonConvert.DeserializeObject<GameState>(msg.Payload);
-                // Raise an event or do whatever is necessary with the received GameState
-                OnReceiveGameState(gameState);
+                //deserialize the int[,] board from the payload into local board
+                board = JsonConvert.DeserializeObject<int[,]>(msg.Payload);
+
+                // Raise the event to notify the client
+                OnReceiveGameState(board);
+
             }
             // Handle other message types if needed
         }
@@ -126,12 +148,13 @@ public class Client
         }
     }
 
-    // Event handler for receiving GameState
-    public event Action<GameState> ReceiveGameStateEvent;
+    // Event handler for receiving board int array
+    public delegate void ReceiveGameStateMessage(int[,] board);
+    public event ReceiveGameStateMessage? ReceiveGameStateEvent;
 
-    protected virtual void OnReceiveGameState(GameState gameState)
+    protected virtual void OnReceiveGameState(int[,] board)
     {
-        ReceiveGameStateEvent?.Invoke(gameState);
+        ReceiveGameStateEvent?.Invoke(board);
     }
 
 }

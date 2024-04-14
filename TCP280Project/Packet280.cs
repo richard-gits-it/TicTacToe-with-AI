@@ -4,9 +4,16 @@ public enum MessageType
 {
     Broadcast,
     ServerOnly,
-    GameState,
+    Move,
     Connected,
-    Disconnected
+    Disconnected,
+    Invite,
+    Accept,
+    Decline,
+    Win,
+    Lose,
+    Draw,
+    Error
 }
 
 public class Packet280

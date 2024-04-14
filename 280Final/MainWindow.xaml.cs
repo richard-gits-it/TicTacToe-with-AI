@@ -1,7 +1,8 @@
-﻿using ClientProject;
-using Human;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -16,156 +18,202 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using TCP280Project;
 using TicTacToe280Project;
+using Application = System.Windows.Application;
+using Button = System.Windows.Controls.Button;
+using MessageBox = System.Windows.Forms.MessageBox;
 
 namespace _280Final
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
-        GameState gs;
+        private int[,] board = new int[3, 3];
         private Client client;
+        private int player = 1;
+
+        private string _opponentPlayer;
+        public string OpponentPlayer
+        {
+            get { return _opponentPlayer; }
+            set
+            {
+                _opponentPlayer = value;
+                OnPropertyChanged(nameof(OpponentPlayer));
+            }
+        }
+
+        private string currentPlayer;
+        private bool isConnected = false;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+
+        //observable collection for the list of players
+        public ObservableCollection<string> Players { get; set; }
         public MainWindow()
         {
             InitializeComponent();
-            //foreach (var child in gameGrid.Children)
-            //{
-            //    if (child is Button)
-            //    {
-            //        ((Button)child).IsEnabled = false;
-            //    }
-            //}
+            //set the data context for the list of players
+            Players = new ObservableCollection<string>();
+            _opponentPlayer = "";
+            this.DataContext = this;
+
+            //disable the buttons until the player is connected
+            ToggleView();
         }
 
         private async void ConnectToServer()
         {
+            if (isConnected)
+            {
+                MessageBox.Show("You are already connected");
+                return;
+            }
             client = new Client("localhost", 10000);
-            client.ReceiveGameStateEvent += Client_ReceivePacket;
+            client.ReceivePacket += Client_ReceivePacket;
             Packet280 tmp = new Packet280();
             tmp.ContentType = MessageType.Connected;
-            tmp.Payload = "Hello Server!";
+            tmp.Payload = txtUsername.Text;
+            currentPlayer = txtUsername.Text;
+            isConnected = true;
             await client.SendMessage(tmp);
 
-            ITicTacToePlayer p1 = new HumanPlayer(1);
-            ITicTacToePlayer p2 = new HumanPlayer(-1);
-            gs = new GameState(p1, p2);
-            UpdateBoard(gs.board);
-
         }
 
-        private void Client_ReceivePacket(GameState state)
+        private void Client_ReceivePacket(Packet280 packet)
         {
-            gs = state;
-            UpdateBoard(gs.board);
-            foreach (var child in gameGrid.Children)
+            if (packet.ContentType == MessageType.Move)
             {
-                if (child is Button)
-                {
-                    ((Button)child).IsEnabled = true;
-                }
+                board = JsonConvert.DeserializeObject<int[,]>(packet.Payload);
+                UpdateBoard(board);
+                ToggleView();
             }
-        }
-
-        //private void btnPlay_Click(object sender, RoutedEventArgs e)
-        //{
-        //    ITicTacToePlayer p1 = null;
-        //    switch (cmbp1.SelectedIndex)
-        //    {
-        //        case 0:
-        //            p1 = new EasyPlayer(1);
-        //            break;
-        //        case 1:
-        //            p1 = new ModeratePlayer(1);
-        //            break;
-        //        case 2:
-        //            p1 = new DifficultPlayer(1);
-        //            break;
-        //    }
-        //    ITicTacToePlayer p2 = null;
-        //    switch (cmbp2.SelectedIndex)
-        //    {
-        //        case 0:
-        //            p2 = new EasyPlayer(-1);
-        //            break;
-        //        case 1:
-        //            p2 = new ModeratePlayer(-1);
-        //            break;
-        //        case 2:
-        //            p2 = new DifficultPlayer(-1);
-        //            break;
-        //    }
-
-        //    gs = new GameState(p1, p2);
-        //    gs.Play();
-        //    UpdateBoard(gs.board);
-        //    if (gs.Winner() != null)
-        //    {
-        //        MessageBox.Show(gs.Winner().Name() + " Wins");
-        //    }
-        //    else
-        //    {
-        //        MessageBox.Show("Draw");
-        //    }
-        //}
-
-        private void UpdateBoard(int[,] board)
-        {
-            //Update the board
-            for (int i = 0; i < 3; i++)
+            else if (packet.ContentType == MessageType.Connected)
             {
-                for (int j = 0; j < 3; j++)
+                Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if (board[i, j] == 1)
+                    var newPlayers = JsonConvert.DeserializeObject<ObservableCollection<string>>(packet.Payload);
+                    Players.Clear();
+                    foreach (var player in newPlayers)
                     {
-                        //X
-                        ((Button)FindName("btn" + i + j)).Content = "X";
+                        //add the players to the list except the current player
+                        if (player != currentPlayer)
+                        {
+                            Players.Add(player);
+                        }
                     }
-                    else if (board[i, j] == -1)
+                });
+            }
+            else if (packet.ContentType == MessageType.Disconnected)
+            {
+                //update players list
+                Players.Remove(packet.Payload);
+
+                Console.WriteLine("Disconnected");
+            }
+            else if (packet.ContentType == MessageType.Win)
+            {
+                MessageBox.Show("You Win");
+            }
+            else if (packet.ContentType == MessageType.Lose)
+            {
+                MessageBox.Show("You Lose");
+            }
+            else if (packet.ContentType == MessageType.Draw)
+            {
+                MessageBox.Show("Draw");
+            }
+            else if (packet.ContentType == MessageType.Accept)
+            {
+                //message box to show that the challenge is accepted
+                MessageBox.Show("Challenge Accepted");
+
+                //set the opponent player name from the payload which is a tuple of sender and receiver then enable the buttons
+                Tuple<string, string> tmp = JsonConvert.DeserializeObject<Tuple<string, string>>(packet.Payload);
+                OnPropertyChanged("OpponentPlayer");
+                _opponentPlayer = tmp.Item1;
+                player = -1;
+
+            }
+            else if (packet.ContentType == MessageType.Decline)
+            {
+                MessageBox.Show($"{packet.Payload}");
+            }
+            else if (packet.ContentType == MessageType.Invite)
+            {
+                //deserialize the payload to get the sender name
+                var sender = JsonConvert.DeserializeObject<Tuple<string, string>>(packet.Payload);
+
+                if (sender.Item2 == currentPlayer)
+                {
+                    //show a message box to accept or reject the challenge
+                    DialogResult dialogResult = MessageBox.Show("Do you want to accept the challenge from " + sender.Item1, "Challenge", MessageBoxButtons.YesNo);
+
+                    if (dialogResult == System.Windows.Forms.DialogResult.Yes)
                     {
-                        //O
-                        ((Button)FindName("btn" + i + j)).Content = "O";
+                        //send the accept message to the server
+                        Packet280 tmp1 = new Packet280();
+                        tmp1.ContentType = MessageType.Accept;
+                        tmp1.Payload = sender.Item1;
+                        client.SendMessage(tmp1);
+
+                        OnPropertyChanged("OpponentPlayer");
+                        _opponentPlayer = sender.Item1;
+                        player = 1;
+                        ToggleView();
                     }
                     else
                     {
-                        ((Button)FindName("btn" + i + j)).Content = "";
+                        //send the decline message to the server
+                        Packet280 tmp1 = new Packet280();
+                        tmp1.ContentType = MessageType.Decline;
+                        tmp1.Payload = sender.Item1;
+                        client.SendMessage(tmp1);
                     }
                 }
+            }else if (packet.ContentType == MessageType.Error)
+            {
+                //message box to show the error message
+                MessageBox.Show(packet.Payload);
+                isConnected = false;
             }
+            
         }
 
-        //private void btnPlay2_Click(object sender, RoutedEventArgs e)
-        //{
-        //    ITicTacToePlayer p1 = null;
-        //    ITicTacToePlayer p2 = new HumanPlayer(1);
-        //    switch (cmbp3.SelectedIndex)
-        //    {
-        //        case 0:
-        //            p1 = new EasyPlayer(-1);
-        //            break;
-        //        case 1:
-        //            p1 = new ModeratePlayer(-1);
-        //            break;
-        //        case 2:
-        //            p1 = new DifficultPlayer(-1);
-        //            break;
-        //    }
 
-        //    gs = new GameState(p1, p2);
-        //    gs.PlayOpponentTurn();
-        //    UpdateBoard(gs.board);
-        //    foreach (var child in gameGrid.Children)
-        //    {
-        //        if (child is Button)
-        //        {
-        //            ((Button)child).IsEnabled = true;
-        //        }
-        //    }
-        //}
+        private void UpdateBoard(int[,] board)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                //Update the board
+                for (int i = 0; i < 3; i++)
+                {
+                    for (int j = 0; j < 3; j++)
+                    {
+                        if (board[i, j] == 1)
+                        {
+                            //X
+                            ((Button)FindName("btn" + i + j)).Content = "X";
+                        }
+                        else if (board[i, j] == -1)
+                        {
+                            //O
+                            ((Button)FindName("btn" + i + j)).Content = "O";
+                        }
+                        else
+                        {
+                            ((Button)FindName("btn" + i + j)).Content = "";
+                        }
+                    }
+                }
+            });
+        }
 
         private void btn00_Click(object sender, RoutedEventArgs e)
         {
-            if (gs == null)
+            if (board == null || !isConnected)
             {
                 return;
             }
@@ -176,51 +224,69 @@ namespace _280Final
             int row = int.Parse(buttonNameParts[1][0].ToString());
             int col = int.Parse(buttonNameParts[1][1].ToString());
 
-            gs.PlayMyTurn(Tuple.Create(row, col));
-            UpdateBoard(gs.board);
-            gs.CheckForWinner();
-            if (gs.Winner() != null)
+            Tuple<int, int> move = new Tuple<int, int>(row, col);
+            //check if the move is valid  and update the board
+            if (client.CheckAvailableMoves().Contains(move))
             {
-                MessageBox.Show(gs.Winner().Name() + " Wins");
-                // Disable all buttons
-                foreach (var child in gameGrid.Children)
-                {
-                    if (child is Button)
-                    {
-                        ((Button)child).IsEnabled = false;
-                    }
-                }
+                board[row, col] = player;
+
+                //tuple for board and opponent player
+                Tuple < int[,], string> tmp1 = new Tuple<int[,], string>(board, _opponentPlayer);
+
+                UpdateBoard(board);
+                //send the move to the server
+                Packet280 tmp = new Packet280();
+                tmp.ContentType = MessageType.Move;
+                tmp.Payload = JsonConvert.SerializeObject(tmp1);
+                client.SendMessage(tmp);
             }
-            else if (gs.GetAvailableMoves().Count == 0)
+            else
             {
-                MessageBox.Show("Draw");
-                // Disable all buttons
-                foreach (var child in gameGrid.Children)
-                {
-                    if (child is Button)
-                    {
-                        ((Button)child).IsEnabled = false;
-                    }
-                }
+                MessageBox.Show("Invalid Move");
             }
 
-            // Send the game state to the server
-            client.SendGameState(gs);
-
-            //disable the buttons until the server sends the game state back
-            foreach (var child in gameGrid.Children)
-            {
-                if (child is Button)
-                {
-                    ((Button)child).IsEnabled = false;
-                }
-            }
+            ToggleView();
 
         }
 
         private void btnStart_Click(object sender, RoutedEventArgs e)
         {
             ConnectToServer();
+        }
+
+        private void btnChallenge_Click(object sender, RoutedEventArgs e)
+        {
+            //send a challenge to the selected player from the listbox
+            if (client != null)
+            {
+                if (lstPlayers.SelectedItem != null)
+                {
+                    Packet280 tmp = new Packet280();
+                    tmp.ContentType = MessageType.Invite;
+                    tmp.Payload = lstPlayers.SelectedItem.ToString();
+                    client.SendMessage(tmp);
+                }
+            }
+        }
+
+        private void ToggleView()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                //toggle the view of the buttons
+                foreach (var child in gameGrid.Children)
+                {
+                    if (child is Button)
+                    {
+                        ((Button)child).IsEnabled = !((Button)child).IsEnabled;
+                    }
+                }
+            });
+        }
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

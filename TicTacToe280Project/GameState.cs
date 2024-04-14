@@ -20,16 +20,16 @@ namespace TicTacToe280Project
         List<Tuple<int, int>> availableMoves = new List<Tuple<int, int>>();
         Queue<ITicTacToePlayer> players = new Queue<ITicTacToePlayer>();
 
-        // Serialize GameState object to JSON
-        public string SerializeToJson()
+        //serialize board
+        public string SerializeBoard()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonConvert.SerializeObject(board);
         }
 
-        // Deserialize JSON to GameState object
-        public static GameState DeserializeFromJson(string json)
+        //deserialize board into int array
+        public void DeserializeBoard(string board)
         {
-            return JsonConvert.DeserializeObject<GameState>(json);
+            this.board = JsonConvert.DeserializeObject<int[,]>(board);
         }
 
 
@@ -191,7 +191,7 @@ namespace TicTacToe280Project
             PlayOpponentTurn();
         }
 
-        public void PlayMyTurn(Tuple<int, int> move)
+        public void PlayTurn(Tuple<int, int> move)
         {
             if (winner != null)
                 return;

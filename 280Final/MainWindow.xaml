@@ -7,7 +7,37 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="600" Width="600">
     <Grid>
-        <Grid Grid.Column="1" Name="gameGrid">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <StackPanel>
+
+            
+            <TextBox Name="txtUsername" HorizontalAlignment="Left" Height="23" Margin="10,10,0,0" TextWrapping="Wrap" Text="Username" VerticalAlignment="Top" MinWidth="180"/>
+            <Button x:Name="Connect" Content="Connect" Click="btnStart_Click"/>
+
+            <Label Name="lblPlayers" Content="Players" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+            <ListBox Name="lstPlayers" HorizontalAlignment="Left" Height="425" Margin="10,10,0,0" VerticalAlignment="Top" Width="180" ItemsSource="{Binding Players}"/>
+            <Button x:Name="btnChallenge" Content="Invite To Game" Click="btnChallenge_Click" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="180"/>
+
+        </StackPanel>
+
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="3*"/>
+            </Grid.RowDefinitions>
+
+
+            <StackPanel Orientation="Horizontal" >
+                <Label Name="lblOpponent" Margin="20" VerticalAlignment="Center" FontSize="20" Content="Opponent:"/>
+                
+                <TextBlock Name="txtOpponent" Margin="20" VerticalAlignment="Center" FontSize="20" Text="{Binding OpponentPlayer}"/>
+            </StackPanel>
+            
+        <Grid Grid.Row="1" Name="gameGrid">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -16,21 +46,24 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height=".5*"/>
-                <RowDefinition Height=".5*"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
+
+
             <Button Name="btn00" Grid.Row="0" Grid.Column="0" FontSize="20" Click="btn00_Click"/>
             <Button Name="btn01" Grid.Row="0" Grid.Column="1" FontSize="20" Click="btn00_Click" />
             <Button Name="btn02" Grid.Row="0" Grid.Column="2" FontSize="20" Click="btn00_Click"/>
-            <Button Content="Connect" Name="btnStart" Grid.Row="3" Grid.Column="2" FontSize="20" Click="btnStart_Click"/>
+           
 
             <Button Name="btn10" Grid.Row="1" Grid.Column="0" FontSize="20" Click="btn00_Click"/>
             <Button Name="btn11" Grid.Row="1" Grid.Column="1" FontSize="20" Click="btn00_Click"/>
             <Button Name="btn12" Grid.Row="1" Grid.Column="2" FontSize="20" Click="btn00_Click"/>
 
-            <Button Name="btn20" Grid.Row="2" Grid.RowSpan="2" Grid.Column="0" FontSize="20" Click="btn00_Click"/>
-            <Button Name="btn21" Grid.Row="2" Grid.RowSpan="2" Grid.Column="1" FontSize="20" Click="btn00_Click"/>
-            <Button Name="btn22" Grid.Row="2" Grid.RowSpan="1" Grid.Column="2" FontSize="20" Click="btn00_Click"/>
+            <Button Name="btn20" Grid.Row="2" Grid.Column="0" FontSize="20" Click="btn00_Click"/>
+            <Button Name="btn21" Grid.Row="2" Grid.Column="1" FontSize="20" Click="btn00_Click"/>
+            <Button Name="btn22" Grid.Row="2" Grid.Column="2" FontSize="20" Click="btn00_Click"/>
+
+        </Grid>
 
         </Grid>
     </Grid>
