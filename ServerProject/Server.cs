@@ -297,7 +297,7 @@ namespace ServerProject
             losePacket.Payload = JsonConvert.SerializeObject(board);
 
             //send the lose to the other player
-            var otherPlayer = _players.Find(p => p.Item2 != player);
+            var otherPlayer = _players.Find(p => p.Item2 == player);
             var otherPlayerClient = _clients.Find(c => c.Client.RemoteEndPoint.ToString() == otherPlayer.Item1);
 
             //send the lose to the other player
@@ -319,7 +319,7 @@ namespace ServerProject
             await BroadcastToClient(drawPacket, client);
 
             //send the draw to the other player
-            var otherPlayer = _players.Find(p => p.Item2 != player);
+            var otherPlayer = _players.Find(p => p.Item2 == player);
             var otherPlayerClient = _clients.Find(c => c.Client.RemoteEndPoint.ToString() == otherPlayer.Item1);
 
             //send the draw to the other player
