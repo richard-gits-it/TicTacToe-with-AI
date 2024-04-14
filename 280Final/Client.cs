@@ -86,14 +86,7 @@ namespace _280Final
                 }else if (msg.ContentType == MessageType.Broadcast)
                 {
 
-                }else if (msg.ContentType == MessageType.Move)
-                {
-                    //in case nothng is listening to the event, we wont call it
-                    if (ReceivePacket != null && msg != null)
-                    {
-                        ReceivePacket(msg);
-                    }
-                }else if (msg.ContentType == MessageType.Invite || msg.ContentType == MessageType.Accept ||
+                }else if (msg.ContentType == MessageType.Move || msg.ContentType == MessageType.Invite || msg.ContentType == MessageType.Accept ||
                         msg.ContentType == MessageType.Decline || msg.ContentType == MessageType.Win ||
                         msg.ContentType == MessageType.Lose || msg.ContentType == MessageType.Draw || msg.ContentType == MessageType.Error)
                 {

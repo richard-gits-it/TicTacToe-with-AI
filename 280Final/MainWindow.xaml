@@ -16,10 +16,11 @@
 
             
             <TextBox Name="txtUsername" HorizontalAlignment="Left" Height="23" Margin="10,10,0,0" TextWrapping="Wrap" Text="Username" VerticalAlignment="Top" MinWidth="180"/>
-            <Button x:Name="Connect" Content="Connect" Click="btnStart_Click"/>
+            <Button x:Name="Connect" Content="Connect" Click="btnStart_Click"
+                    Width="180"/>
 
             <Label Name="lblPlayers" Content="Players" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
-            <ListBox Name="lstPlayers" HorizontalAlignment="Left" Height="425" Margin="10,10,0,0" VerticalAlignment="Top" Width="180" ItemsSource="{Binding Players}"/>
+            <ListBox Name="lstPlayers" HorizontalAlignment="Left" Height="425" Margin="10,0,0,0" VerticalAlignment="Top" Width="180" ItemsSource="{Binding Players}"/>
             <Button x:Name="btnChallenge" Content="Invite To Game" Click="btnChallenge_Click" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="180"/>
 
         </StackPanel>

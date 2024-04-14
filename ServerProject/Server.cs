@@ -200,6 +200,17 @@ namespace ServerProject
                         var board = payload.Item1;
                         var player = payload.Item2;
 
+                        //check board for win
+                        if (CheckForWinner(board))
+                        {
+                            await SendWinLose(client, board, player);
+                        }
+                        else if (CheckForDraw(board))
+                        {
+                            await SendDraw(client, board, player);
+                        }
+
+
                         //create a new packet for the move
                         Packet280 movePacket = new Packet280();
                         movePacket.ContentType = MessageType.Move;
@@ -213,7 +224,8 @@ namespace ServerProject
                         //send the move to the other player
                         await BroadcastToClient(movePacket, otherPlayerClient);
 
-                    }else if (tmpMessage.ContentType == MessageType.Invite || tmpMessage.ContentType == MessageType.Accept ||
+                    }
+                    else if (tmpMessage.ContentType == MessageType.Invite || tmpMessage.ContentType == MessageType.Accept ||
                         tmpMessage.ContentType == MessageType.Decline || tmpMessage.ContentType == MessageType.Win ||
                         tmpMessage.ContentType == MessageType.Lose || tmpMessage.ContentType == MessageType.Draw)
                     {
@@ -267,6 +279,108 @@ namespace ServerProject
             }
         }
 
+        private async Task SendWinLose(TcpClient client, int[,] board, string player)
+        {
+            //create a new packet for the win
+            Packet280 winPacket = new Packet280();
+            winPacket.ContentType = MessageType.Win;
+            //serialize the board and send it as the payload
+            winPacket.Payload = JsonConvert.SerializeObject(board);
+
+            //send the win to the player
+            await BroadcastToClient(winPacket, client);
+
+            //create a new packet for the lose
+            Packet280 losePacket = new Packet280();
+            losePacket.ContentType = MessageType.Lose;
+            //serialize the board and send it as the payload
+            losePacket.Payload = JsonConvert.SerializeObject(board);
+
+            //send the lose to the other player
+            var otherPlayer = _players.Find(p => p.Item2 != player);
+            var otherPlayerClient = _clients.Find(c => c.Client.RemoteEndPoint.ToString() == otherPlayer.Item1);
+
+            //send the lose to the other player
+            await BroadcastToClient(losePacket, otherPlayerClient);
+
+            //remove the game from the list of games
+            _games.Remove(new Tuple<string, string>(player, otherPlayer.Item2));
+        }
+
+        private async Task SendDraw(TcpClient client, int[,] board, string player)
+        {
+            //create a new packet for the draw
+            Packet280 drawPacket = new Packet280();
+            drawPacket.ContentType = MessageType.Draw;
+            //serialize the board and send it as the payload
+            drawPacket.Payload = JsonConvert.SerializeObject(board);
+
+            //send the draw to the player
+            await BroadcastToClient(drawPacket, client);
+
+            //send the draw to the other player
+            var otherPlayer = _players.Find(p => p.Item2 != player);
+            var otherPlayerClient = _clients.Find(c => c.Client.RemoteEndPoint.ToString() == otherPlayer.Item1);
+
+            //send the draw to the other player
+            await BroadcastToClient(drawPacket, otherPlayerClient);
+
+            //remove the game from the list of games
+            _games.Remove(new Tuple<string, string>(player, otherPlayer.Item2));
+        }
+
+        private bool CheckForWinner(int[,] board)
+        {
+            // Check rows
+            for (int i = 0; i < 3; i++)
+            {
+                if (board[i, 0] != 0 && board[i, 0] == board[i, 1] && board[i, 1] == board[i, 2])
+                {
+                    return true;
+                }
+            }
+
+            // Check columns
+            for (int i = 0; i < 3; i++)
+            {
+                if (board[0, i] != 0 && board[0, i] == board[1, i] && board[1, i] == board[2, i])
+                {
+                    return true;
+                }
+            }
+
+            // Check diagonals
+            if (board[0, 0] != 0 && board[0, 0] == board[1, 1] && board[1, 1] == board[2, 2])
+            {
+                return true;
+            }
+
+            if (board[0, 2] != 0 && board[0, 2] == board[1, 1] && board[1, 1] == board[2, 0])
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool CheckForDraw(int[,] board)
+        {
+            // Check for a draw
+            bool draw = true;
+            for (int i = 0; i < 3; i++)
+            {
+                for (int j = 0; j < 3; j++)
+                {
+                    if (board[i, j] == 0)
+                    {
+                        draw = false;
+                        break;
+                    }
+                }
+            }
+
+            return draw;
+        }   
 
     }
 }

@@ -47,6 +47,8 @@ namespace _280Final
         private string currentPlayer;
         private bool isConnected = false;
 
+        private bool isTurn = false;
+
         public event PropertyChangedEventHandler PropertyChanged;
 
 
@@ -71,7 +73,7 @@ namespace _280Final
                 MessageBox.Show("You are already connected");
                 return;
             }
-            client = new Client("localhost", 10000);
+            client = new Client("172.18.31.118", 10000);
             client.ReceivePacket += Client_ReceivePacket;
             Packet280 tmp = new Packet280();
             tmp.ContentType = MessageType.Connected;
@@ -115,15 +117,34 @@ namespace _280Final
             }
             else if (packet.ContentType == MessageType.Win)
             {
+                board = JsonConvert.DeserializeObject<int[,]>(packet.Payload);
+                UpdateBoard(board);
+
+                //message box to show that the player wins and disable the buttons to prevent further moves
                 MessageBox.Show("You Win");
             }
             else if (packet.ContentType == MessageType.Lose)
             {
+                board = JsonConvert.DeserializeObject<int[,]>(packet.Payload);
+                UpdateBoard(board);
+
                 MessageBox.Show("You Lose");
+                ToggleView();
+
             }
             else if (packet.ContentType == MessageType.Draw)
             {
+                board = JsonConvert.DeserializeObject<int[,]>(packet.Payload);
+                UpdateBoard(board);
+
                 MessageBox.Show("Draw");
+
+                //if is turn is true, then disable the buttons
+                if (isTurn)
+                {
+                    ToggleView();
+                }
+
             }
             else if (packet.ContentType == MessageType.Accept)
             {
@@ -271,6 +292,8 @@ namespace _280Final
 
         private void ToggleView()
         {
+            isTurn = !isTurn;
+
             Application.Current.Dispatcher.Invoke(() =>
             {
                 //toggle the view of the buttons
