@@ -6,7 +6,7 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:_280Final"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="600" Closing="Window_Closing">
+        Title="{Binding ConnectionStatus}" Height="600" Width="600" Closing="Window_Closing">
     <Window.Resources>
         <!-- Square Button Style -->
         <Style x:Key="SquareButtonStyle" TargetType="Button">
@@ -51,7 +51,7 @@
             <StackPanel x:Name="stkPlayers">
                 
                 <Label Name="lblPlayers" Content="Players" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
-            <ListBox Name="lstPlayers" HorizontalAlignment="Left" Height="425" Margin="10,0,0,0" VerticalAlignment="Top" Width="180" ItemsSource="{Binding Players}"/>
+            <ListBox Name="lstPlayers" HorizontalAlignment="Left" Height="400" Margin="10,0,0,0" VerticalAlignment="Top" Width="180" ItemsSource="{Binding Players}"/>
             <Button x:Name="btnChallenge" Content="Invite To Game" Click="btnChallenge_Click" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="180"/>
                 
             </StackPanel>

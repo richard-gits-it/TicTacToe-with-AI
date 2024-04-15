@@ -10,7 +10,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -20,7 +19,6 @@ using TCP280Project;
 using TicTacToe280Project;
 using Application = System.Windows.Application;
 using Button = System.Windows.Controls.Button;
-using MessageBox = System.Windows.Forms.MessageBox;
 
 namespace _280Final
 {
@@ -34,6 +32,18 @@ namespace _280Final
         private int player = 1;
 
         #region Properties and Fields
+        //field for connection status
+        private string _connectionStatus;
+        public string ConnectionStatus
+        {
+            get { return _connectionStatus; }
+            set
+            {
+                _connectionStatus = value;
+                OnPropertyChanged(nameof(ConnectionStatus));
+            }
+        }
+
         //field for opponent score
         private int _opponentScore;
         public int OpponentScore
@@ -126,7 +136,7 @@ namespace _280Final
 
         #endregion
 
-        private bool isConnected = false;
+        public bool isConnected = false;
 
         private bool isTurn = true;
 
@@ -146,6 +156,7 @@ namespace _280Final
             OpponentScore = 0;
             TieScore = 0;
             Turn = "";
+            ConnectionStatus = "TicTacToe - Offline";
             btnLeaveGame.IsEnabled = false;
             this.DataContext = this;
 
@@ -160,8 +171,21 @@ namespace _280Final
                 MessageBox.Show("You are already connected");
                 return;
             }
-            client = new Client("localhost", 10000);
-            client.ReceivePacket += Client_ReceivePacket;
+
+            //check if client is already instantiated
+            if (client == null)
+            {
+                client = new Client("localhost", 10000);
+                client.ReceivePacket += Client_ReceivePacket;
+            }
+
+            //check if client is connected before sending a message
+            if (!client._client.Connected)
+            {
+                MessageBox.Show("Error connecting to server.");
+                return;
+            }
+
             Packet280 tmp = new Packet280();
             tmp.ContentType = MessageType.Connected;
             tmp.Payload = txtUsername.Text;
@@ -169,211 +193,181 @@ namespace _280Final
             OnPropertyChanged("CurrentPlayer");
             stkUsername.IsEnabled = false;
             isConnected = true;
-            await client.SendMessage(tmp);
+            ConnectionStatus = "TicTacToe - Online";
+            OnPropertyChanged("ConnectionStatus");
 
+            await client.SendMessage(tmp);
         }
 
         private void Client_ReceivePacket(Packet280 packet)
         {
-            if (packet.ContentType == MessageType.Move)
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                isTurn = true;
-                board = JsonConvert.DeserializeObject<int[,]>(packet.Payload);
-                UpdateBoard(board);
-                EnableBoard(true);
-
-                //update turn
-                Turn = $"It's your turn.";
-                OnPropertyChanged("Turn");
-            }
-            else if (packet.ContentType == MessageType.Connected)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
+                switch (packet.ContentType)
                 {
-                    var newPlayers = JsonConvert.DeserializeObject<ObservableCollection<string>>(packet.Payload);
-                    Players.Clear();
-                    foreach (var player in newPlayers)
-                    {
-                        //add the players to the list except the current player
-                        if (player != currentPlayer)
-                        {
-                            Players.Add(player);
-                        }
-                    }
-                });
-            }
-            else if (packet.ContentType == MessageType.Disconnected)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    var newPlayers = JsonConvert.DeserializeObject<ObservableCollection<string>>(packet.Payload);
-                    Players.Clear();
-                    foreach (var player in newPlayers)
-                    {
-                        //add the players to the list except the current player
-                        if (player != currentPlayer)
-                        {
-                            Players.Add(player);
-                        }
-                    }
-                });
+                    case MessageType.Move:
+                        HandleMovePacket(packet);
+                        break;
+                    case MessageType.Connected:
+                    case MessageType.Disconnected:
+                        HandlePlayerListPacket(packet);
+                        break;
+                    case MessageType.Win:
+                        HandleWinPacket(packet);
+                        break;
+                    case MessageType.Lose:
+                        HandleLosePacket(packet);
+                        break;
+                    case MessageType.Draw:
+                        HandleDrawPacket(packet);
+                        break;
+                    case MessageType.Accept:
+                        HandleAcceptPacket(packet);
+                        break;
+                    case MessageType.Decline:
+                        MessageBox.Show(packet.Payload);
+                        break;
+                    case MessageType.Invite:
+                        HandleInvitePacket(packet);
+                        break;
+                    case MessageType.Error:
+                        HandleErrorPacket(packet);
+                        break;
+                    case MessageType.Leave:
+                        HandleLeavePacket(packet);
+                        break;
+                }
+            });
+        }
 
+        #region handle packets
+        private void HandleMovePacket(Packet280 packet)
+        {
+            isTurn = true;
+            board = JsonConvert.DeserializeObject<int[,]>(packet.Payload);
+            UpdateBoard(board);
+            EnableBoard(true);
+            Turn = $"It's your turn.";
+            OnPropertyChanged("Turn");
+        }
+
+        private void HandlePlayerListPacket(Packet280 packet)
+        {
+            var newPlayers = JsonConvert.DeserializeObject<ObservableCollection<string>>(packet.Payload);
+            Players.Clear();
+            foreach (var player in newPlayers)
+            {
+                if (player != currentPlayer)
+                {
+                    Players.Add(player);
+                }
+            }
+            if (packet.ContentType == MessageType.Disconnected)
+            {
                 Console.WriteLine("Disconnected");
             }
-            else if (packet.ContentType == MessageType.Win)
+        }
+
+        private void HandleWinPacket(Packet280 packet)
+        {
+            board = JsonConvert.DeserializeObject<int[,]>(packet.Payload);
+            PlayerScore++;
+            OnPropertyChanged("PlayerScore");
+            UpdateBoard(board);
+            NextRound();
+            MessageBox.Show("You Win");
+        }
+
+        private void HandleLosePacket(Packet280 packet)
+        {
+            board = JsonConvert.DeserializeObject<int[,]>(packet.Payload);
+            OpponentScore++;
+            OnPropertyChanged("OpponentScore");
+            UpdateBoard(board);
+            NextRound();
+            MessageBox.Show("You Lose");
+        }
+
+        private void HandleDrawPacket(Packet280 packet)
+        {
+            board = JsonConvert.DeserializeObject<int[,]>(packet.Payload);
+            TieScore++;
+            OnPropertyChanged("TieScore");
+            UpdateBoard(board);
+            NextRound();
+            MessageBox.Show("Draw");
+        }
+
+        private void HandleAcceptPacket(Packet280 packet)
+        {
+            isTurn = false;
+            board = new int[3, 3];
+            PlayerScore = 0;
+            OpponentScore = 0;
+            UpdateBoard(board);
+            MessageBox.Show("Challenge Accepted");
+            var tmp = JsonConvert.DeserializeObject<Tuple<string, string>>(packet.Payload);
+            _opponentPlayer = tmp.Item1;
+            OnPropertyChanged("OpponentPlayer");
+            player = -1;
+            PlayerSymbol = "O";
+            OpponentPlayerSymbol = "X";
+            OnPropertyChanged("PlayerSymbol");
+            OnPropertyChanged("OpponentPlayerSymbol");
+            btnLeaveGame.IsEnabled = true;
+            stkPlayers.IsEnabled = false;
+            Turn = $"It's {_opponentPlayer}'s turn.";
+            OnPropertyChanged("Turn");
+        }
+
+        private void HandleInvitePacket(Packet280 packet)
+        {
+            var sender = JsonConvert.DeserializeObject<Tuple<string, string>>(packet.Payload);
+            if (sender.Item2 == currentPlayer)
             {
-                //create new board and add win to the player score
-                board = JsonConvert.DeserializeObject<int[,]>(packet.Payload);
-
-                //add the score to the player
-                PlayerScore++;
-                OnPropertyChanged("PlayerScore");
-                UpdateBoard(board);
-
-                NextRound();
-
-                //message box to show that the player wins and disable the buttons to prevent further moves
-                MessageBox.Show("You Win");
-            }
-            else if (packet.ContentType == MessageType.Lose)
-            {
-                board = JsonConvert.DeserializeObject<int[,]>(packet.Payload);
-                //add the score to the opponent
-                OpponentScore++;
-                OnPropertyChanged("OpponentScore");
-                UpdateBoard(board);
-
-                NextRound();
-
-                MessageBox.Show("You Lose");
-
-            }
-            else if (packet.ContentType == MessageType.Draw)
-            {
-                board = JsonConvert.DeserializeObject<int[,]>(packet.Payload);
-                TieScore++;
-                OnPropertyChanged("TieScore");
-                UpdateBoard(board);
-
-                NextRound();
-
-                MessageBox.Show("Draw");
-            }
-            else if (packet.ContentType == MessageType.Accept)
-            {
-                isTurn = false;
-
-                //reset the board
-                board = new int[3, 3];
-                //reset player score
-                PlayerScore = 0;
-                //reset opponent score
-                OpponentScore = 0;
-                UpdateBoard(board);
-
-                //message box to show that the challenge is accepted
-                MessageBox.Show("Challenge Accepted");
-
-                //set the opponent player name from the payload which is a tuple of sender and receiver then enable the buttons
-                Tuple<string, string> tmp = JsonConvert.DeserializeObject<Tuple<string, string>>(packet.Payload);
-                OnPropertyChanged("OpponentPlayer");
-                _opponentPlayer = tmp.Item1;
-                player = -1;
-                //update player and opponent symbols
-                PlayerSymbol = "O";
-                OpponentPlayerSymbol = "X";
-                OnPropertyChanged("PlayerSymbol");
-                OnPropertyChanged("OpponentPlayerSymbol");
-                Application.Current.Dispatcher.Invoke(() =>
+                var dialogResult = MessageBox.Show($"{sender.Item1} has challenged you to a game. Do you accept?", "Challenge", MessageBoxButton.YesNo);
+                if (dialogResult == MessageBoxResult.Yes)
                 {
-                    //enable leave game button
+                    Packet280 tmp1 = new Packet280();
+                    tmp1.ContentType = MessageType.Accept;
+                    tmp1.Payload = sender.Item1;
+                    client.SendMessage(tmp1);
+                    _opponentPlayer = sender.Item1;
+                    OnPropertyChanged("OpponentPlayer");
+                    player = 1;
+                    isTurn = true;
+                    PlayerSymbol = "X";
+                    OpponentPlayerSymbol = "O";
+                    OnPropertyChanged("PlayerSymbol");
+                    OnPropertyChanged("OpponentPlayerSymbol");
+                    EnableBoard(true);
                     btnLeaveGame.IsEnabled = true;
-
-                    //enable stkPlayers
                     stkPlayers.IsEnabled = false;
-
-                });
-
-                //update turn
-                Turn = $"It's {_opponentPlayer}'s turn.";
-                OnPropertyChanged("Turn");
-
-            }
-            else if (packet.ContentType == MessageType.Decline)
-            {
-                MessageBox.Show($"{packet.Payload}");
-            }
-            else if (packet.ContentType == MessageType.Invite)
-            {
-                //deserialize the payload to get the sender name
-                var sender = JsonConvert.DeserializeObject<Tuple<string, string>>(packet.Payload);
-
-                if (sender.Item2 == currentPlayer)
-                {
-                    //show a message box to accept or reject the challenge
-                    DialogResult dialogResult = MessageBox.Show("Do you want to accept the challenge from " + sender.Item1, "Challenge", MessageBoxButtons.YesNo);
-
-                    if (dialogResult == System.Windows.Forms.DialogResult.Yes)
-                    {
-                        //send the accept message to the server
-                        Packet280 tmp1 = new Packet280();
-                        tmp1.ContentType = MessageType.Accept;
-                        tmp1.Payload = sender.Item1;
-                        client.SendMessage(tmp1);
-
-                        OnPropertyChanged("OpponentPlayer");
-                        _opponentPlayer = sender.Item1;
-                        player = 1;
-                        isTurn = true;
-                        //update player and opponent symbols
-                        PlayerSymbol = "X";
-                        OpponentPlayerSymbol = "O";
-                        OnPropertyChanged("PlayerSymbol");
-                        OnPropertyChanged("OpponentPlayerSymbol");
-
-                        EnableBoard(true);
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            //enable leave game button
-                            btnLeaveGame.IsEnabled = true;
-
-                            //enable stkPlayers
-                            stkPlayers.IsEnabled = false;
-
-                        });
-
-                        //update turn
-                        Turn = $"It's your turn.";
-                        OnPropertyChanged("Turn");
-                    }
-                    else
-                    {
-                        //send the decline message to the server
-                        Packet280 tmp1 = new Packet280();
-                        tmp1.ContentType = MessageType.Decline;
-                        tmp1.Payload = sender.Item1;
-                        client.SendMessage(tmp1);
-                    }
-
-                    //reset the board
-                    board = new int[3, 3];
-                    UpdateBoard(board);
+                    Turn = $"It's your turn.";
+                    OnPropertyChanged("Turn");
                 }
-            }else if (packet.ContentType == MessageType.Error)
-            {
-                //message box to show the error message
-                Application.Current.Dispatcher.Invoke(() =>
+                else
                 {
-                    stkUsername.IsEnabled = true;
-                    MessageBox.Show(packet.Payload);
-                });
-                isConnected = false;
+                    Packet280 tmp1 = new Packet280();
+                    tmp1.ContentType = MessageType.Decline;
+                    tmp1.Payload = sender.Item1;
+                    client.SendMessage(tmp1);
+                }
+                board = new int[3, 3];
+                UpdateBoard(board);
+            }
+        }
 
-            }else if (packet.ContentType == MessageType.Leave)
+        private void HandleErrorPacket(Packet280 packet)
+        {
+            stkUsername.IsEnabled = true;
+            isConnected = false;
+            ConnectionStatus = "TicTacToe - Offline";
+            OnPropertyChanged("ConnectionStatus");
+            //if payload is "Server has stopped", close the client
+            if (packet.Payload == "Server has stopped")
             {
-                //message box to show that the opponent has left the game
-                MessageBox.Show($"{packet.Payload}");
-
+                client.DisconnectClient();
                 //reset the board
                 board = new int[3, 3];
                 UpdateBoard(board);
@@ -407,12 +401,41 @@ namespace _280Final
                 //reset the turn
                 Turn = "";
                 OnPropertyChanged("Turn");
-
                 EnableBoard(false);
-            }
 
+                //clear players list
+                Players.Clear();
+            }
+            MessageBox.Show(packet.Payload);
         }
 
+        private void HandleLeavePacket(Packet280 packet)
+        {
+            MessageBox.Show(packet.Payload);
+            board = new int[3, 3];
+            UpdateBoard(board);
+            PlayerScore = 0;
+            OpponentScore = 0;
+            OnPropertyChanged("PlayerScore");
+            OnPropertyChanged("OpponentScore");
+            TieScore = 0;
+            OnPropertyChanged("TieScore");
+            _opponentPlayer = "";
+            OnPropertyChanged("OpponentPlayer");
+            PlayerSymbol = "";
+            OpponentPlayerSymbol = "";
+            OnPropertyChanged("PlayerSymbol");
+            OnPropertyChanged("OpponentPlayerSymbol");
+            btnLeaveGame.IsEnabled = false;
+            stkPlayers.IsEnabled = true;
+            Turn = "";
+            OnPropertyChanged("Turn");
+            EnableBoard(false);
+        }
+
+        #endregion
+
+        #region methods
         private void NextRound()
         {
             player = -player;
@@ -467,6 +490,23 @@ namespace _280Final
             });
         }
 
+        private void EnableBoard(bool enable)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                //toggle the view of the buttons
+                foreach (var child in gameGrid.Children)
+                {
+                    if (child is Button)
+                    {
+                        ((Button)child).IsEnabled = enable;
+                    }
+                }
+            });
+        }
+        #endregion
+
+        #region events
         private void btn00_Click(object sender, RoutedEventArgs e)
         {
             if (board == null || !isConnected)
@@ -529,34 +569,13 @@ namespace _280Final
             }
         }
 
-
-        private void EnableBoard(bool enable)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                //toggle the view of the buttons
-                foreach (var child in gameGrid.Children)
-                {
-                    if (child is Button)
-                    {
-                        ((Button)child).IsEnabled = enable;
-                    }
-                }
-            });
-        }
-
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
         private void btnLeaveGame_Click(object sender, RoutedEventArgs e)
         {
             //messsage box to confirm if the player wants to leave the game
-            DialogResult dialogResult = MessageBox.Show("Do you want to leave the game?", "Leave Game", MessageBoxButtons.YesNo);
+            var dialogResult = MessageBox.Show("Do you want to leave the game?", "Leave Game", MessageBoxButton.YesNo);
 
             //if the player wants to leave the game, send the leave message to the server
-            if (dialogResult == System.Windows.Forms.DialogResult.Yes)
+            if (dialogResult == MessageBoxResult.Yes)
             {
                 Packet280 tmp = new Packet280();
                 tmp.ContentType = MessageType.Leave;
@@ -608,5 +627,14 @@ namespace _280Final
         {
             client.DisconnectClient();
         }
+        #endregion
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+
+        
     }
 }

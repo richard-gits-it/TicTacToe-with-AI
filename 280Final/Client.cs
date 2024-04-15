@@ -13,7 +13,7 @@ namespace _280Final
 {
     public class Client
     {
-        private TcpClient _client;
+        public TcpClient _client;
         public delegate void ReceivePacketMessage(Packet280 packet);
         public event ReceivePacketMessage? ReceivePacket;
 
@@ -39,94 +39,125 @@ namespace _280Final
 
         public Client(string host, int port)
         {
-            //makes the connection, binds to the ip address and port
-            this._client = new TcpClient(host, port);
-            //just start receiving from the server
-            Task.Run(() => Receive());
-
+            try
+            {
+                this._client = new TcpClient();
+                this._client.Connect(host, port);
+                Task.Run(() => Receive());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error connecting to server: {ex.Message}");
+            }
         }
 
         public async Task SendMessage(Packet280 packet)
         {
-            NetworkStream stream = this._client.GetStream();
-            var tmp = JsonConvert.SerializeObject(packet);
-            byte[] buffer = Encoding.UTF8.GetBytes(tmp);
-            await stream.WriteAsync(buffer, 0, buffer.Length);
+            try
+            {
+                NetworkStream stream = this._client.GetStream();
+                var tmp = JsonConvert.SerializeObject(packet);
+                byte[] buffer = Encoding.UTF8.GetBytes(tmp);
+                await stream.WriteAsync(buffer, 0, buffer.Length);
+                await stream.FlushAsync(); // Ensure data is sent immediately
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending message: {ex.Message}");
+            }
         }
+
 
         public async Task<string> Receive()
         {
-            NetworkStream stream = this._client.GetStream();
-            while (true)
+            try
             {
-                byte[] buffer;
-                buffer = new byte[4096];
-                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                var stringMgs = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                var msg = JsonConvert.DeserializeObject<Packet280>(stringMgs);
+                NetworkStream stream = this._client.GetStream();
+                while (true)
+                {
+                    byte[] buffer = new byte[4096];
+                    int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    var stringMsg = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    var msg = JsonConvert.DeserializeObject<Packet280>(stringMsg);
 
-                if (msg == null)
-                    return null;
+                    if (msg == null)
+                        return null;
 
-                if (msg.ContentType == MessageType.Connected)
-                {
-                    //in case nothng is listening to the event, we wont call it
-                    if (ReceivePacket != null && msg != null)
-                    {
-                        ReceivePacket(msg);
-                    }
-
-                }else if (msg.ContentType == MessageType.Disconnected)
-                {
-                    //in case nothng is listening to the event, we wont call it
-                    if (ReceivePacket != null && msg != null)
-                    {
-                        ReceivePacket(msg);
-                    }
-                }else if (msg.ContentType == MessageType.Broadcast)
-                {
-
-                }else if (msg.ContentType == MessageType.Move || msg.ContentType == MessageType.Win ||
-                        msg.ContentType == MessageType.Lose || msg.ContentType == MessageType.Draw)
-                {
-                    board = JsonConvert.DeserializeObject<int[,]>(msg.Payload); 
-                    //in case nothng is listening to the event, we wont call it
-                    if (ReceivePacket != null && msg != null)
-                    {
-                        ReceivePacket(msg);
-                    }
-                }else if (msg.ContentType == MessageType.Invite || msg.ContentType == MessageType.Accept || msg.ContentType == MessageType.Decline
-                         || msg.ContentType == MessageType.Error)
-                {
-                    //in case nothng is listening to the event, we wont call it
-                    if (ReceivePacket != null && msg != null)
-                    {
-                        ReceivePacket(msg);
-                    }
-                }else if (msg.ContentType == MessageType.Leave)
-                {
-                    board = new int[3, 3];
-                    //in case nothng is listening to the event, we wont call it
-                    if (ReceivePacket != null && msg != null)
-                    {
-                        ReceivePacket(msg);
-                    }
+                    // Notify subscribers about received message
+                    NotifySubscribers(msg);
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error receiving message: {ex.Message}");
+                return null;
+            }
+        }
+
+        private void NotifySubscribers(Packet280 msg)
+        {
+            try
+            {
+                // Check if there are any subscribers and the message is not null
+                if (ReceivePacket == null || msg == null)
+                    return;
+
+                // Handle specific message types
+                switch (msg.ContentType)
+                {
+                    case MessageType.Connected:
+                    case MessageType.Disconnected:
+                    case MessageType.Broadcast:
+                        // No specific handling required for these types
+                        break;
+
+                    case MessageType.Move:
+                    case MessageType.Win:
+                    case MessageType.Lose:
+                    case MessageType.Draw:
+                        board = JsonConvert.DeserializeObject<int[,]>(msg.Payload);
+                        break;
+
+                    case MessageType.Invite:
+                    case MessageType.Accept:
+                    case MessageType.Decline:
+                    case MessageType.Error:
+                        board = new int[3, 3];
+                        break;
+
+                    default:
+                        // Handle unknown message types
+                        break;
+                }
+
+                // Notify subscribers about received message
+                ReceivePacket(msg);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error handling received message: {ex.Message}");
             }
         }
 
         public async void DisconnectClient()
         {
-            if (this._client != null && this._client.Connected)
+            try
             {
+                if (this._client != null && this._client.Connected)
+                {
 
-                Packet280 tmp = new Packet280();
-                tmp.ContentType = MessageType.Disconnected;
-                tmp.Payload = "Client Disconnected " + Dns.GetHostName();
-                await SendMessage(tmp);
+                    Packet280 tmp = new Packet280();
+                    tmp.ContentType = MessageType.Disconnected;
+                    tmp.Payload = "Client Disconnected " + Dns.GetHostName();
+                    await SendMessage(tmp);
 
-                //make sure you only close the connection after you have sent the message
-                this._client.Close();
+                    // Make sure you only close the connection after you have sent the message
+                    this._client.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error disconnecting client: {ex.Message}");
             }
         }
 

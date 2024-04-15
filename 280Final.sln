@@ -5,8 +5,6 @@ VisualStudioVersion = 17.6.33829.357
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "280Final", "280Final\280Final.csproj", "{BB782047-A4D9-44E3-83DA-DDA3236A90E1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ClientProject", "ClientProject\ClientProject.csproj", "{90921F63-32DB-44CA-AA0D-1DEC0E5032D0}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServerProject", "ServerProject\ServerProject.csproj", "{F3479E54-31A2-427B-8AD2-CAFC4787D07D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TCP280Project", "TCP280Project\TCP280Project.csproj", "{1DC414C1-E36E-4AF4-8E28-98A8C921B9DC}"
@@ -16,8 +14,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TicTacToe280Project", "TicTacToe280Project\TicTacToe280Project.csproj", "{5AEEE221-5042-4650-9F57-67E6AA93AAE7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectDebugHelper", "ProjectDebugHelper\ProjectDebugHelper.csproj", "{883AB173-256A-4409-B957-42C6BBCCD052}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameDemo", "TaskManagementApp\GameDemo.csproj", "{E03A57F0-AF76-4841-B12C-5D2C8C11A094}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +25,6 @@ Global
 		{BB782047-A4D9-44E3-83DA-DDA3236A90E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BB782047-A4D9-44E3-83DA-DDA3236A90E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BB782047-A4D9-44E3-83DA-DDA3236A90E1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{90921F63-32DB-44CA-AA0D-1DEC0E5032D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{90921F63-32DB-44CA-AA0D-1DEC0E5032D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{90921F63-32DB-44CA-AA0D-1DEC0E5032D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{90921F63-32DB-44CA-AA0D-1DEC0E5032D0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F3479E54-31A2-427B-8AD2-CAFC4787D07D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F3479E54-31A2-427B-8AD2-CAFC4787D07D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F3479E54-31A2-427B-8AD2-CAFC4787D07D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -53,10 +45,6 @@ Global
 		{883AB173-256A-4409-B957-42C6BBCCD052}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{883AB173-256A-4409-B957-42C6BBCCD052}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{883AB173-256A-4409-B957-42C6BBCCD052}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E03A57F0-AF76-4841-B12C-5D2C8C11A094}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E03A57F0-AF76-4841-B12C-5D2C8C11A094}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E03A57F0-AF76-4841-B12C-5D2C8C11A094}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E03A57F0-AF76-4841-B12C-5D2C8C11A094}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

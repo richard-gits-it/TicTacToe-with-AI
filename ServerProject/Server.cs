@@ -148,19 +148,41 @@ namespace ServerProject
         {
             try
             {
-                //setup a stream with a networked machine
+                // Setup a stream with a networked machine
                 NetworkStream stream = client.GetStream();
-                //setup a buffer to read the data
-                byte[] buffer = new byte[4096];
-                //loop and wait for bytes to arrive from the client
-                int bytesRead;
-                while((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                // Loop indefinitely to continuously receive messages
+                while (true)
                 {
-                    //read message as a string
+                    // Setup a buffer to read the data
+                    byte[] buffer = new byte[4096];
+                    // Wait for bytes to arrive from the client
+                    int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
+                    if (bytesRead == 0)
+                    {
+                        // If bytesRead is 0, it means the client disconnected
+                        break;
+                    }
+                    // Read message as a string
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    //deserialize a json string back into a packet280
+                    // Deserialize a JSON string back into a Packet280
                     var tmpMessage = JsonConvert.DeserializeObject<Packet280>(message);
-                    if (tmpMessage.ContentType == MessageType.Connected)
+                    // Handle the received message
+                    await HandleMessage(tmpMessage, client);
+                }
+                // Connection is lost
+                LocalServerMessageEvent($"Client disconnected: {client.Client.RemoteEndPoint}");
+            }
+            catch (Exception ex)
+            {
+                LocalServerMessageEvent($"Client disconnected: {client.Client.RemoteEndPoint} :: {ex.Message}");
+            }
+        }
+
+        private async Task HandleMessage(Packet280 tmpMessage, TcpClient client)
+        {
+            switch (tmpMessage.ContentType)
+            {
+                case MessageType.Connected:
                     {
                         //check if username is already taken from the list of players
                         if (_players.Exists(p => p.Item2 == tmpMessage.Payload))
@@ -183,9 +205,10 @@ namespace ServerProject
                         //broadcast to all clients the list of players
                         tmpMessage.Payload = JsonConvert.SerializeObject(GetPlayerList());
                         await BroadcastToAllClients(tmpMessage);
-
+                        break;
                     }
-                    else if (tmpMessage.ContentType == MessageType.Disconnected)
+
+                case MessageType.Disconnected:
                     {
                         LocalServerMessageEvent("A client disconnected: " + client.Client.RemoteEndPoint);
 
@@ -195,21 +218,20 @@ namespace ServerProject
                         this._clients.Remove(client);
                         //remove the player from the list of players
                         await BroadcastToAllClients(tmpMessage);
-
-
+                        break;
                     }
-                    else if (tmpMessage.ContentType == MessageType.Broadcast)
-                    {
-                        //what broadcast means is that we should send it to everyone
-                        await BroadcastToAllClients(tmpMessage);
-                        //this line 
-                        LocalServerMessageEvent(tmpMessage.Payload);
-                    }
-                    else if (tmpMessage.ContentType == MessageType.Move)
+
+                case MessageType.Broadcast:
+                    //what broadcast means is that we should send it to everyone
+                    await BroadcastToAllClients(tmpMessage);
+                    //this line 
+                    LocalServerMessageEvent(tmpMessage.Payload);
+                    break;
+                case MessageType.Move:
                     {
                         // Assuming tmpMessage.Payload is a serialized tuple of board and player object
                         // Deserialize the payload into a tuple
-                        var payload = JsonConvert.DeserializeObject < Tuple<int[,], string>>(tmpMessage.Payload);
+                        var payload = JsonConvert.DeserializeObject<Tuple<int[,], string>>(tmpMessage.Payload);
                         // Get the board and player object from the tuple
                         var board = payload.Item1;
                         var player = payload.Item2;
@@ -239,11 +261,16 @@ namespace ServerProject
 
                         //send the move to the other player
                         await BroadcastToClient(movePacket, otherPlayerClient);
-
+                        break;
                     }
-                    else if (tmpMessage.ContentType == MessageType.Invite || tmpMessage.ContentType == MessageType.Accept ||
-                        tmpMessage.ContentType == MessageType.Decline || tmpMessage.ContentType == MessageType.Win ||
-                        tmpMessage.ContentType == MessageType.Lose || tmpMessage.ContentType == MessageType.Draw || tmpMessage.ContentType == MessageType.Leave)
+
+                case MessageType.Invite:
+                case MessageType.Accept:
+                case MessageType.Decline:
+                case MessageType.Win:
+                case MessageType.Lose:
+                case MessageType.Draw:
+                case MessageType.Leave:
                     {
                         var receiver = _players.Find(p => p.Item2 == tmpMessage.Payload);
                         //get sender from the client
@@ -262,14 +289,16 @@ namespace ServerProject
                                 tmpMessage.Payload = "Player is currently in a game.";
                                 tmpMessage.ContentType = MessageType.Decline;
                                 //if the invite is already in the list, send a decline
+                                await BroadcastToClient(tmpMessage, client);
+                                return;
                             }
                             else if (_invites.Exists(i => i.Item1 == sender.Item2 && i.Item2 == receiver.Item2))
                             {
                                 tmpMessage.Payload = "Invite already sent";
                                 tmpMessage.ContentType = MessageType.Decline;
-                            }else if(_games.Exists(g => g.Item2 == receiver.Item2) || _games.Exists(g => g.Item1 == receiver.Item2)){
-                                tmpMessage.Payload = "Player is currently in a game.";
-                                tmpMessage.ContentType = MessageType.Decline;
+                                //if the invite is already in the list, send a decline
+                                await BroadcastToClient(tmpMessage, client);
+                                return;
                             }
                             else
                             {
@@ -283,7 +312,12 @@ namespace ServerProject
                             {
                                 tmpMessage.Payload = "Challenge Declined";
                             }
-                        }else if (tmpMessage.ContentType == MessageType.Leave)
+                            else if (tmpMessage.ContentType == MessageType.Accept)
+                            {
+                                _games.Add(new Tuple<string, string>(sender.Item2, receiver.Item2));
+                            }
+                        }
+                        else if (tmpMessage.ContentType == MessageType.Leave)
                         {
                             tmpMessage.Payload = $"{sender.Item2} has left the game";
                             if (!_games.Remove(new Tuple<string, string>(sender.Item2, receiver.Item2)))
@@ -294,30 +328,10 @@ namespace ServerProject
 
                         //send the invite to the other player
                         await BroadcastToClient(tmpMessage, _clients.Find(c => c.Client.RemoteEndPoint.ToString() == receiver.Item1));
-
-                        //if accept add the game to the list of games
-                        if (tmpMessage.ContentType == MessageType.Accept)
-                        {
-                            _games.Add(new Tuple<string, string>(sender.Item2, receiver.Item2));
-                        }
+                        break;
                     }
-
-                }
-                //connection is lost
-                Packet280 packet = new Packet280();
-                //client disconnects, so we broadcast to let others know
-                packet.ContentType = MessageType.Broadcast;
-                packet.Payload = $"Client disconnected: {client.Client.RemoteEndPoint}";
-
             }
-            catch (Exception ex)
-            {
-                Packet280 packet = new Packet280();
-                packet.ContentType = MessageType.Broadcast;
-                packet.Payload = $"Client disconnected: {client.Client.RemoteEndPoint} :: {ex.Message}";
-                //TODO: we neeed an event to actually invoke the message
-            }
-        }
+        }   
 
         private async Task SendWinLose(TcpClient client, string player)
         {
