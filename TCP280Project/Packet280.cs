@@ -10,6 +10,7 @@ public enum MessageType
     Invite,
     Accept,
     Decline,
+    Leave,
     Win,
     Lose,
     Draw,

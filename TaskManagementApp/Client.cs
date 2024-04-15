@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using TCP280Project;
 using TicTacToe280Project;
 
-namespace _280Final
+namespace GameDemo
 {
     public class Client
     {
@@ -86,8 +86,7 @@ namespace _280Final
                 }else if (msg.ContentType == MessageType.Broadcast)
                 {
 
-                }else if (msg.ContentType == MessageType.Move || msg.ContentType == MessageType.Win ||
-                        msg.ContentType == MessageType.Lose || msg.ContentType == MessageType.Draw)
+                }else if (msg.ContentType == MessageType.Move)
                 {
                     board = JsonConvert.DeserializeObject<int[,]>(msg.Payload); 
                     //in case nothng is listening to the event, we wont call it
@@ -95,8 +94,9 @@ namespace _280Final
                     {
                         ReceivePacket(msg);
                     }
-                }else if (msg.ContentType == MessageType.Invite || msg.ContentType == MessageType.Accept || msg.ContentType == MessageType.Decline
-                         || msg.ContentType == MessageType.Error || msg.ContentType == MessageType.Leave)
+                }else if (msg.ContentType == MessageType.Move || msg.ContentType == MessageType.Invite || msg.ContentType == MessageType.Accept ||
+                        msg.ContentType == MessageType.Decline || msg.ContentType == MessageType.Win ||
+                        msg.ContentType == MessageType.Lose || msg.ContentType == MessageType.Draw || msg.ContentType == MessageType.Error)
                 {
                     //in case nothng is listening to the event, we wont call it
                     if (ReceivePacket != null && msg != null)

@@ -17,6 +17,9 @@ namespace ServerProject
         //tuple for players and their usernames
         List<Tuple<string, string>> _players = new List<Tuple<string, string>>();
 
+        //tuple for outgoing invites with sender and receiver
+        List<Tuple<string, string>> _invites = new List<Tuple<string, string>>();
+
         //get a list of usernames from _players
         public List<string> GetPlayerList()
         {
@@ -44,7 +47,13 @@ namespace ServerProject
         }
         public async Task Stop()
         {
-            //set our bool that contols our loo[
+            //send error message to clients
+            Packet280 packet = new Packet280();
+            packet.ContentType = MessageType.Error;
+            packet.Payload = "Server has stopped";
+            await BroadcastToAllClients(packet);
+
+            //set our bool that contols our loop
             this._running = false;
             //stop the listener
             this._listener.Stop();
@@ -179,9 +188,14 @@ namespace ServerProject
                     else if (tmpMessage.ContentType == MessageType.Disconnected)
                     {
                         LocalServerMessageEvent("A client disconnected: " + client.Client.RemoteEndPoint);
-                        await BroadcastToAllClients(tmpMessage);
+
+                        _players.Remove(_players.Find(p => p.Item1 == client.Client.RemoteEndPoint.ToString()));
+                        tmpMessage.Payload = JsonConvert.SerializeObject(GetPlayerList());
                         //client has gracefully disconnected, so we remove them from the list
                         this._clients.Remove(client);
+                        //remove the player from the list of players
+                        await BroadcastToAllClients(tmpMessage);
+
 
                     }
                     else if (tmpMessage.ContentType == MessageType.Broadcast)
@@ -203,11 +217,13 @@ namespace ServerProject
                         //check board for win
                         if (CheckForWinner(board))
                         {
-                            await SendWinLose(client, board, player);
+                            await SendWinLose(client, player);
+                            return;
                         }
                         else if (CheckForDraw(board))
                         {
-                            await SendDraw(client, board, player);
+                            await SendDraw(client, player);
+                            return;
                         }
 
 
@@ -227,7 +243,7 @@ namespace ServerProject
                     }
                     else if (tmpMessage.ContentType == MessageType.Invite || tmpMessage.ContentType == MessageType.Accept ||
                         tmpMessage.ContentType == MessageType.Decline || tmpMessage.ContentType == MessageType.Win ||
-                        tmpMessage.ContentType == MessageType.Lose || tmpMessage.ContentType == MessageType.Draw)
+                        tmpMessage.ContentType == MessageType.Lose || tmpMessage.ContentType == MessageType.Draw || tmpMessage.ContentType == MessageType.Leave)
                     {
                         var receiver = _players.Find(p => p.Item2 == tmpMessage.Payload);
                         //get sender from the client
@@ -237,15 +253,43 @@ namespace ServerProject
                         //pack the tuple into the payload
                         tmpMessage.Payload = JsonConvert.SerializeObject(tuple);
 
-                        //if invite and receiver is in game, send a decline
-                        if (tmpMessage.ContentType == MessageType.Invite && (_games.Exists(g => g.Item2 == receiver.Item2) || _games.Exists(g => g.Item1 == receiver.Item2)))
+
+                        //if invite, add to the list of invites
+                        if (tmpMessage.ContentType == MessageType.Invite)
                         {
-                            tmpMessage.Payload = "Player is currently in a game.";
-                            tmpMessage.ContentType = MessageType.Decline;
+                            if (_games.Exists(g => g.Item2 == receiver.Item2) || _games.Exists(g => g.Item1 == receiver.Item2))
+                            {
+                                tmpMessage.Payload = "Player is currently in a game.";
+                                tmpMessage.ContentType = MessageType.Decline;
+                                //if the invite is already in the list, send a decline
+                            }
+                            else if (_invites.Exists(i => i.Item1 == sender.Item2 && i.Item2 == receiver.Item2))
+                            {
+                                tmpMessage.Payload = "Invite already sent";
+                                tmpMessage.ContentType = MessageType.Decline;
+                            }else if(_games.Exists(g => g.Item2 == receiver.Item2) || _games.Exists(g => g.Item1 == receiver.Item2)){
+                                tmpMessage.Payload = "Player is currently in a game.";
+                                tmpMessage.ContentType = MessageType.Decline;
+                            }
+                            else
+                            {
+                                _invites.Add(new Tuple<string, string>(sender.Item2, receiver.Item2));
+                            }
                         }
-                        else if (tmpMessage.ContentType == MessageType.Decline && !_games.Exists(g => g.Item2 == sender.Item2))
+                        else if (tmpMessage.ContentType == MessageType.Decline || tmpMessage.ContentType == MessageType.Accept)
                         {
-                            tmpMessage.Payload = "Challenge Declined";
+                            _invites.Remove(new Tuple<string, string>(sender.Item2, receiver.Item2));
+                            if (tmpMessage.ContentType == MessageType.Decline && !_games.Exists(g => g.Item2 == sender.Item2))
+                            {
+                                tmpMessage.Payload = "Challenge Declined";
+                            }
+                        }else if (tmpMessage.ContentType == MessageType.Leave)
+                        {
+                            tmpMessage.Payload = $"{sender.Item2} has left the game";
+                            if (!_games.Remove(new Tuple<string, string>(sender.Item2, receiver.Item2)))
+                            {
+                                _games.Remove(new Tuple<string, string>(receiver.Item2, sender.Item2));
+                            }
                         }
 
                         //send the invite to the other player
@@ -255,10 +299,6 @@ namespace ServerProject
                         if (tmpMessage.ContentType == MessageType.Accept)
                         {
                             _games.Add(new Tuple<string, string>(sender.Item2, receiver.Item2));
-                        }
-                        else if (tmpMessage.ContentType == MessageType.Win || tmpMessage.ContentType == MessageType.Lose || tmpMessage.ContentType == MessageType.Draw)
-                        {
-                            _games.Remove(new Tuple<string, string>(sender.Item2, receiver.Item2));
                         }
                     }
 
@@ -279,12 +319,14 @@ namespace ServerProject
             }
         }
 
-        private async Task SendWinLose(TcpClient client, int[,] board, string player)
+        private async Task SendWinLose(TcpClient client, string player)
         {
+            //reset the board
+            var board = new int[3, 3];
             //create a new packet for the win
             Packet280 winPacket = new Packet280();
             winPacket.ContentType = MessageType.Win;
-            //serialize the board and send it as the payload
+            //serialize a new board and send it as the payload
             winPacket.Payload = JsonConvert.SerializeObject(board);
 
             //send the win to the player
@@ -303,12 +345,12 @@ namespace ServerProject
             //send the lose to the other player
             await BroadcastToClient(losePacket, otherPlayerClient);
 
-            //remove the game from the list of games
-            _games.Remove(new Tuple<string, string>(player, otherPlayer.Item2));
         }
 
-        private async Task SendDraw(TcpClient client, int[,] board, string player)
+        private async Task SendDraw(TcpClient client, string player)
         {
+            //reset the board
+            var board = new int[3, 3];
             //create a new packet for the draw
             Packet280 drawPacket = new Packet280();
             drawPacket.ContentType = MessageType.Draw;
@@ -324,9 +366,6 @@ namespace ServerProject
 
             //send the draw to the other player
             await BroadcastToClient(drawPacket, otherPlayerClient);
-
-            //remove the game from the list of games
-            _games.Remove(new Tuple<string, string>(player, otherPlayer.Item2));
         }
 
         private bool CheckForWinner(int[,] board)

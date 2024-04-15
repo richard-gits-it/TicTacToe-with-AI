@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\280Final\280Final.csproj" />
     <ProjectReference Include="..\ServerProject\ServerProject.csproj" />
+    <ProjectReference Include="..\TaskManagementApp\GameDemo.csproj" />
   </ItemGroup>
 
 </Project>

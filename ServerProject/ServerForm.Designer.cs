@@ -72,6 +72,8 @@
             Controls.Add(btnStart);
             Name = "ServerForm";
             Text = "Form1";
+            FormClosing += ServerForm_FormClosing;
+            Load += ServerForm_Load;
             ResumeLayout(false);
         }
 

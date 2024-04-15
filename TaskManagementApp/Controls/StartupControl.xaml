@@ -1,0 +1,81 @@
+﻿<UserControl x:Class="GameDemo.StartupControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:GameDemo"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="600">
+    <Grid>
+        <Border CornerRadius="20,20,20,20" Background="{StaticResource PrimaryHueDarkBrush}"/>
+        <Grid>
+
+            <!--// Base Grid //-->
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="75"/>
+                <RowDefinition Height="*" />
+
+            </Grid.RowDefinitions>
+            <!--// Navigation Panel //-->
+
+            <Grid HorizontalAlignment="Left" Margin="10,0,0,0">
+
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Orientation="Horizontal"
+                            >
+                    <Button Background="Transparent"
+                            BorderBrush="Transparent"
+                            Margin="5,0"
+                            Click="btnStartup_Click">
+                    <TextBlock
+                             VerticalAlignment="Center"
+                        Text="TicTacToe"
+                        Foreground="White"
+                        FontSize="22"/>
+                        
+                    </Button>
+                </StackPanel>
+                
+            </Grid>
+            <Border Width="550
+                    " VerticalAlignment="Bottom" Grid.ColumnSpan="3" Grid.Row="0" Height=".5" Opacity="0.5" Background="{StaticResource SecondaryHueMidBrush}"/>
+
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="1">
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="3*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock 
+                        Text="Choose mode:"
+                        FontSize="40" 
+                        FontWeight="Bold" 
+                        Foreground="{StaticResource MaterialDesignDarkForeground}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"/>
+
+                    <StackPanel Grid.Row="1" Orientation="Vertical">
+                        <Button Content="Play with AI" Margin="5" Click="PlayOffline_Click"/>
+                        <Button Content="Play with Others" Margin="5" Click="PlayOnline_Click"/>
+                    </StackPanel>
+                    
+                </Grid>
+
+            </Grid>
+        </Grid>
+        <Button x:Name="CloseApp1"
+                Style="{StaticResource ExitApp}"
+                Click="CloseApp_Click"/>
+    </Grid>
+</UserControl>

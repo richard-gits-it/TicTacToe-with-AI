@@ -12,10 +12,10 @@ public partial class ServerForm : Form
 
     private async void btnStart_Click(object sender, EventArgs e)
     {
-        server.ServerMessageEvent += Server_OnMessageReceived;
-        server.LocalServerMessageEvent += Server_LocalServerMessageEvent;
-        Task serverTask = server.Start();
-        await serverTask;
+        //server.ServerMessageEvent += Server_OnMessageReceived;
+        //server.LocalServerMessageEvent += Server_LocalServerMessageEvent;
+        //Task serverTask = server.Start();
+        //await serverTask;
     }
 
     private void Server_LocalServerMessageEvent(string message)
@@ -29,6 +29,19 @@ public partial class ServerForm : Form
     }
 
     private void btnStop_Click(object sender, EventArgs e)
+    {
+        server.Stop();
+    }
+
+    private async void ServerForm_Load(object sender, EventArgs e)
+    {
+        server.ServerMessageEvent += Server_OnMessageReceived;
+        server.LocalServerMessageEvent += Server_LocalServerMessageEvent;
+        Task serverTask = server.Start();
+        await serverTask;
+    }
+
+    private void ServerForm_FormClosing(object sender, FormClosingEventArgs e)
     {
         server.Stop();
     }

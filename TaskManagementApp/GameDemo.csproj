@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <RootNamespace>GameDemo</RootNamespace>
+    <Nullable>disable</Nullable>
+    <UseWPF>true</UseWPF>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Admin\**" />
+    <Compile Remove="Player\**" />
+    <EmbeddedResource Remove="Admin\**" />
+    <EmbeddedResource Remove="Player\**" />
+    <None Remove="Admin\**" />
+    <None Remove="Player\**" />
+    <Page Remove="Admin\**" />
+    <Page Remove="Player\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Fonts\Rubik-Medium.ttf" />
+    <None Remove="Fonts\Rubik-Regular.ttf" />
+	<None Remove="Images\shutdown_def.png" />
+	<None Remove="Images\shutdown_mo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Fonts\Rubik-Medium.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Fonts\Rubik-Regular.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
+	<Content Include="Images\shutdown_def.png">
+	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	</Content>
+	<Content Include="Images\shutdown_mo.png">
+	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	</Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MaterialDesignThemes" Version="4.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataClasses\DataClasses.csproj" />
+    <ProjectReference Include="..\TCP280Project\TCP280Project.csproj" />
+    <ProjectReference Include="..\TicTacToe280Project\TicTacToe280Project.csproj" />
+  </ItemGroup>
+
+</Project>
