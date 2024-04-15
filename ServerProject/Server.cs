@@ -278,7 +278,7 @@ namespace ServerProject
                         }
                         else if (tmpMessage.ContentType == MessageType.Decline || tmpMessage.ContentType == MessageType.Accept)
                         {
-                            _invites.Remove(new Tuple<string, string>(sender.Item2, receiver.Item2));
+                            _invites.Remove(new Tuple<string, string>(receiver.Item2, sender.Item2));
                             if (tmpMessage.ContentType == MessageType.Decline && !_games.Exists(g => g.Item2 == sender.Item2))
                             {
                                 tmpMessage.Payload = "Challenge Declined";

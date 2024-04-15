@@ -96,8 +96,16 @@ namespace _280Final
                         ReceivePacket(msg);
                     }
                 }else if (msg.ContentType == MessageType.Invite || msg.ContentType == MessageType.Accept || msg.ContentType == MessageType.Decline
-                         || msg.ContentType == MessageType.Error || msg.ContentType == MessageType.Leave)
+                         || msg.ContentType == MessageType.Error)
                 {
+                    //in case nothng is listening to the event, we wont call it
+                    if (ReceivePacket != null && msg != null)
+                    {
+                        ReceivePacket(msg);
+                    }
+                }else if (msg.ContentType == MessageType.Leave)
+                {
+                    board = new int[3, 3];
                     //in case nothng is listening to the event, we wont call it
                     if (ReceivePacket != null && msg != null)
                     {
