@@ -174,6 +174,13 @@ namespace _280Final
 
         private async void ConnectToServer()
         {
+            //check if txtUsername is empty or whitespace
+            if (string.IsNullOrWhiteSpace(txtUsername.Text))
+            {
+                MessageBox.Show("Please enter a username");
+                return;
+            }
+
             if (isConnected)
             {
                 MessageBox.Show("You are already connected");
@@ -512,6 +519,90 @@ namespace _280Final
                 }
             });
         }
+
+        private async void StartAIGame(bool first)
+        {
+            ITicTacToePlayer p1 = null;
+            ITicTacToePlayer p2 = null;
+            if (first)
+            {
+                player = 1;
+                p1 = new HumanPlayer(player);
+            }
+            else
+            {
+                player = -1;
+                p2 = new HumanPlayer(player);
+            }
+
+            string pc = "";
+            switch (cmbp3.SelectedIndex)
+            {
+                case 0:
+                    if (first)
+                        p2 = new EasyPlayer(-player);
+                    else
+                        p1 = new EasyPlayer(-player);
+                    pc = "Easy";
+                    break;
+                case 1:
+                    if (first)
+                        p2 = new ModeratePlayer(-player);
+                    else
+                        p1 = new ModeratePlayer(-player);
+                    pc = "Moderate";
+                    break;
+                case 2:
+                    if (first)
+                        p2 = new DifficultPlayer(-player);
+                    else
+                        p1 = new DifficultPlayer(-player);
+                    pc = "Difficult";
+                    break;
+            }
+
+            gs = new GameState(p1, p2);
+            UpdateBoard(gs.board);
+
+            if (first)
+            {
+                Turn = $"It's your turn.";
+                //symbol for player
+                PlayerSymbol = "X";
+                OnPropertyChanged("PlayerSymbol");
+                //symbol for AI
+                OpponentPlayerSymbol = "O";
+                OnPropertyChanged("OpponentPlayerSymbol");
+                EnableBoard(true);
+
+            }
+            else
+            {
+                EnableBoard(false);
+
+                PlayerSymbol = "O";
+                OnPropertyChanged("PlayerSymbol");
+                OpponentPlayerSymbol = "X";
+                OnPropertyChanged("OpponentPlayerSymbol");
+
+                Turn = $"It's the AI's turn.";
+                OnPropertyChanged("Turn");
+
+                await Task.Delay(TimeSpan.FromSeconds(1));
+
+                gs.PlayOpponentTurn();
+                UpdateBoard(gs.board);
+
+                Turn = $"It's your turn.";
+                OnPropertyChanged("Turn");
+                EnableBoard(true);
+            }
+
+            //set opponent player name
+            _opponentPlayer = pc;
+            OnPropertyChanged("OpponentPlayer");
+
+        }
         #endregion
 
         #region events
@@ -761,87 +852,6 @@ namespace _280Final
         }
 
 
-        private async void StartAIGame(bool first)
-        {
-            ITicTacToePlayer p1 = null;
-            ITicTacToePlayer p2 = null;
-            if (first)
-            {
-                player = 1;
-                p1 = new HumanPlayer(player);
-            }
-            else{
-                player = -1;
-                p2 = new HumanPlayer(player);
-            }
-
-            string pc = "";
-            switch (cmbp3.SelectedIndex)
-            {
-                case 0:
-                    if (first)
-                        p2 = new EasyPlayer(-player);
-                    else
-                        p1 = new EasyPlayer(-player);
-                    pc = "Easy";
-                    break;
-                case 1:
-                    if (first)
-                        p2 = new ModeratePlayer(-player);
-                    else
-                        p1 = new ModeratePlayer(-player);
-                    pc = "Moderate";
-                    break;
-                case 2:
-                    if (first)
-                        p2 = new DifficultPlayer(-player);
-                    else
-                        p1 = new DifficultPlayer(-player);
-                    pc = "Difficult";
-                    break;
-            }
-
-            gs = new GameState(p1, p2);
-            UpdateBoard(gs.board);
-
-            if (first)
-            {
-                Turn = $"It's your turn.";
-                //symbol for player
-                PlayerSymbol = "X";
-                OnPropertyChanged("PlayerSymbol");
-                //symbol for AI
-                OpponentPlayerSymbol = "O";
-                OnPropertyChanged("OpponentPlayerSymbol");
-                EnableBoard(true);
-
-            }
-            else
-            {
-                EnableBoard(false);
-
-                PlayerSymbol = "O";
-                OnPropertyChanged("PlayerSymbol");
-                OpponentPlayerSymbol = "X";
-                OnPropertyChanged("OpponentPlayerSymbol");
-
-                Turn = $"It's the AI's turn.";
-                OnPropertyChanged("Turn");
-
-                await Task.Delay(TimeSpan.FromSeconds(1));
-
-                gs.PlayOpponentTurn();
-                UpdateBoard(gs.board);
-
-                Turn = $"It's your turn.";
-                OnPropertyChanged("Turn");
-                EnableBoard(true);
-            }
-
-            //set opponent player name
-            _opponentPlayer = pc;
-            OnPropertyChanged("OpponentPlayer");
-
-        }
+        
     }
 }
