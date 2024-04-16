@@ -14,7 +14,8 @@ public enum MessageType
     Win,
     Lose,
     Draw,
-    Error
+    Error,
+    AI
 }
 
 public class Packet280

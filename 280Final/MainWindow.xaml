@@ -51,11 +51,22 @@
             <StackPanel x:Name="stkPlayers">
                 
                 <Label Name="lblPlayers" Content="Players" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
-            <ListBox Name="lstPlayers" HorizontalAlignment="Left" Height="400" Margin="10,0,0,0" VerticalAlignment="Top" Width="180" ItemsSource="{Binding Players}"/>
+            <ListBox Name="lstPlayers" HorizontalAlignment="Left" MinHeight="300" Margin="10,0,0,0" VerticalAlignment="Top" Width="180" ItemsSource="{Binding Players}"/>
             <Button x:Name="btnChallenge" Content="Invite To Game" Click="btnChallenge_Click" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="180"/>
                 
             </StackPanel>
-                
+
+            <StackPanel Orientation="Vertical" 
+            HorizontalAlignment="Center"
+                        Margin="20">
+                <Label Content="AI Level:"/>
+                <ComboBox Name="cmbp3" Width="150">
+                    <ComboBoxItem Content="Easy" IsSelected="True"/>
+                    <ComboBoxItem Content="Moderate"/>
+                    <ComboBoxItem Content="Hard"/>
+                </ComboBox>
+                <Button Name="btnPlay2" Content="Play Game" Click="btnPlay2_Click" Margin="10"/>
+            </StackPanel>
 
         </StackPanel>
 

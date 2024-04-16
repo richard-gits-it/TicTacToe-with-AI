@@ -1,4 +1,8 @@
-﻿using Newtonsoft.Json;
+﻿using Difficult;
+using Easy;
+using Human;
+using Moderate;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,6 +19,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Xps.Serialization;
 using TCP280Project;
 using TicTacToe280Project;
 using Application = System.Windows.Application;
@@ -27,6 +32,9 @@ namespace _280Final
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        private GameState gs;
+        private bool isPlayingAI = false;
+
         private int[,] board = new int[3, 3];
         private Client client;
         private int player = 1;
@@ -509,7 +517,7 @@ namespace _280Final
         #region events
         private void btn00_Click(object sender, RoutedEventArgs e)
         {
-            if (board == null || !isConnected)
+            if (board == null)
             {
                 return;
             }
@@ -521,13 +529,84 @@ namespace _280Final
             int col = int.Parse(buttonNameParts[1][1].ToString());
 
             Tuple<int, int> move = new Tuple<int, int>(row, col);
+            if (isPlayingAI)
+            {
+                PlayAgainstAI(move);
+            }
+            else if(isConnected && !isPlayingAI)
+                PlayAgainstPlayer(row, col, move);
+
+        }
+
+        private async void PlayAgainstAI(Tuple<int, int> move)
+        {
+            gs.PlayHumanTurn(move);
+            UpdateBoard(gs.board);
+            Turn = $"It's the AI's turn.";
+            OnPropertyChanged("Turn");
+
+            //disable the board
+            EnableBoard(false);
+            await Task.Delay(TimeSpan.FromSeconds(2));
+
+            gs.PlayOpponentTurn();
+            UpdateBoard(gs.board);
+            Turn = $"It's your turn.";
+            OnPropertyChanged("Turn");
+            EnableBoard(true);
+
+            gs.CheckForWinner();
+            if (gs.Winner() != null)
+            {
+                if (gs.Winner().Symbol() == player)
+                {
+                    MessageBox.Show("You Win");
+                    PlayerScore++;
+                    OnPropertyChanged("PlayerScore");
+                }
+                else
+                {
+                    MessageBox.Show("You Lose");
+                    OpponentScore++;
+                    OnPropertyChanged("OpponentScore");
+                }
+
+                if (player == -1)
+                {
+                    StartAIGame(true);
+                }
+                else
+                {
+                    StartAIGame(false);
+                }
+
+
+            }
+            else if (gs.GetAvailableMoves().Count == 0)
+            {
+                MessageBox.Show("Draw");
+                TieScore++;
+                OnPropertyChanged("TieScore");
+                if (player == -1)
+                {
+                    StartAIGame(true);
+                }
+                else
+                {
+                    StartAIGame(false);
+                }
+            }
+        }
+
+        private void PlayAgainstPlayer(int row, int col, Tuple<int, int> move)
+        {
             //check if the move is valid  and update the board
             if (client.CheckAvailableMoves().Contains(move))
             {
                 board[row, col] = player;
 
                 //tuple for board and opponent player
-                Tuple < int[,], string> tmp1 = new Tuple<int[,], string>(board, _opponentPlayer);
+                Tuple<int[,], string> tmp1 = new Tuple<int[,], string>(board, _opponentPlayer);
                 isTurn = false;
                 UpdateBoard(board);
                 //send the move to the server
@@ -545,8 +624,6 @@ namespace _280Final
             {
                 MessageBox.Show("Invalid Move");
             }
-
-
         }
 
         private void btnStart_Click(object sender, RoutedEventArgs e)
@@ -577,10 +654,34 @@ namespace _280Final
             //if the player wants to leave the game, send the leave message to the server
             if (dialogResult == MessageBoxResult.Yes)
             {
-                Packet280 tmp = new Packet280();
-                tmp.ContentType = MessageType.Leave;
-                tmp.Payload = _opponentPlayer;
-                client.SendMessage(tmp);
+                try
+                {
+                    if(isPlayingAI)
+                    {
+                        if (client != null)
+                        {
+                            isPlayingAI = false;
+                            Packet280 tmp = new Packet280();
+                            tmp.ContentType = MessageType.AI;
+                            tmp.Payload = "Stop";
+                            client.SendMessage(tmp);
+                        }
+                    }
+                    else
+                    {
+
+                        Packet280 tmp = new Packet280();
+                        tmp.ContentType = MessageType.Leave;
+                        tmp.Payload = _opponentPlayer;
+                        client.SendMessage(tmp);
+                    }
+
+                }
+                catch
+                {
+                    throw;
+                }
+
                 //reset the board
                 board = new int[3, 3];
                 UpdateBoard(board);
@@ -609,6 +710,9 @@ namespace _280Final
                     //enable stkPlayers
                     stkPlayers.IsEnabled = true;
 
+                    //enable stkUser
+                    stkUser.IsEnabled = true;
+
                 });
 
                 //reset the turn
@@ -625,7 +729,8 @@ namespace _280Final
 
         private void Window_Closing(object sender, CancelEventArgs e)
         {
-            client.DisconnectClient();
+            if (client != null)
+                client.DisconnectClient();
         }
         #endregion
 
@@ -634,7 +739,109 @@ namespace _280Final
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        private void btnPlay2_Click(object sender, RoutedEventArgs e)
+        {
+            StartAIGame(true);
 
-        
+            //disable stkUser
+            stkUser.IsEnabled = false;
+            btnLeaveGame.IsEnabled = true;
+
+            isPlayingAI = true;
+
+            if (client != null)
+            {
+                //send packet to server that the player is playing against AI
+                Packet280 tmp = new Packet280();
+                tmp.ContentType = MessageType.AI;
+                tmp.Payload = "Start";
+                client.SendMessage(tmp);
+
+            }
+
+        }
+
+        private async void StartAIGame(bool first)
+        {
+            ITicTacToePlayer p1 = null;
+            ITicTacToePlayer p2 = null;
+            if (first)
+            {
+                player = 1;
+                p1 = new HumanPlayer(player);
+            }
+            else{
+                player = -1;
+                p2 = new HumanPlayer(player);
+            }
+
+            string pc = "";
+            switch (cmbp3.SelectedIndex)
+            {
+                case 0:
+                    if (first)
+                        p2 = new EasyPlayer(-player);
+                    else
+                        p1 = new EasyPlayer(-player);
+                    pc = "Easy";
+                    break;
+                case 1:
+                    if (first)
+                        p2 = new ModeratePlayer(-player);
+                    else
+                        p1 = new ModeratePlayer(-player);
+                    pc = "Moderate";
+                    break;
+                case 2:
+                    if (first)
+                        p2 = new DifficultPlayer(-player);
+                    else
+                        p1 = new DifficultPlayer(-player);
+                    pc = "Difficult";
+                    break;
+            }
+
+            gs = new GameState(p1, p2);
+            UpdateBoard(gs.board);
+
+            if (first)
+            {
+                Turn = $"It's your turn.";
+                //symbol for player
+                PlayerSymbol = "X";
+                OnPropertyChanged("PlayerSymbol");
+                //symbol for AI
+                OpponentPlayerSymbol = "O";
+                OnPropertyChanged("OpponentPlayerSymbol");
+                EnableBoard(true);
+
+            }
+            else
+            {
+                EnableBoard(false);
+
+                PlayerSymbol = "O";
+                OnPropertyChanged("PlayerSymbol");
+                OpponentPlayerSymbol = "X";
+                OnPropertyChanged("OpponentPlayerSymbol");
+
+                Turn = $"It's the AI's turn.";
+                OnPropertyChanged("Turn");
+
+                await Task.Delay(TimeSpan.FromSeconds(1));
+
+                gs.PlayOpponentTurn();
+                UpdateBoard(gs.board);
+
+                Turn = $"It's your turn.";
+                OnPropertyChanged("Turn");
+                EnableBoard(true);
+            }
+
+            //set opponent player name
+            _opponentPlayer = pc;
+            OnPropertyChanged("OpponentPlayer");
+
+        }
     }
 }

@@ -182,6 +182,20 @@ namespace ServerProject
         {
             switch (tmpMessage.ContentType)
             {
+                case MessageType.AI:
+                    {
+                        if (tmpMessage.Payload == "Start")
+                        {
+                            //add to list of games
+                            _games.Add(new Tuple<string, string>(_players.Find(p => p.Item1 == client.Client.RemoteEndPoint.ToString()).Item2, "AI"));
+                        }
+                        else if (tmpMessage.Payload == "Stop")
+                        {
+                            //remove from list of games
+                            _games.Remove(new Tuple<string, string>(_players.Find(p => p.Item1 == client.Client.RemoteEndPoint.ToString()).Item2, "AI"));
+                        }
+                        break;
+                    }
                 case MessageType.Connected:
                     {
                         //check if username is already taken from the list of players

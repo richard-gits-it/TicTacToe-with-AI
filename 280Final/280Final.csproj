@@ -13,8 +13,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\HumanPlayer\Human.csproj" />
     <ProjectReference Include="..\TCP280Project\TCP280Project.csproj" />
     <ProjectReference Include="..\TicTacToe280Project\TicTacToe280Project.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Difficult">
+      <HintPath>..\AI\Difficult.dll</HintPath>
+    </Reference>
+    <Reference Include="Easy">
+      <HintPath>..\AI\Easy.dll</HintPath>
+    </Reference>
+    <Reference Include="Moderate">
+      <HintPath>..\AI\Moderate.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
