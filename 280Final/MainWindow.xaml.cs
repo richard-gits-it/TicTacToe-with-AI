@@ -153,11 +153,13 @@ namespace _280Final
 
         //observable collection for the list of players
         public ObservableCollection<string> Players { get; set; }
+        public ObservableCollection<string> Dashboard { get; set; }
         public MainWindow()
         {
             InitializeComponent();
             //set the data context for the list of players
             Players = new ObservableCollection<string>();
+            Dashboard = new ObservableCollection<string>();
             _opponentPlayer = "";
             currentPlayer = "";
             PlayerScore = 0;
@@ -250,6 +252,10 @@ namespace _280Final
                         break;
                     case MessageType.Leave:
                         HandleLeavePacket(packet);
+                        break;
+                    case MessageType.Broadcast:
+                        //add the message to the dashboard
+                        Dashboard.Add(packet.Payload);
                         break;
                 }
             });

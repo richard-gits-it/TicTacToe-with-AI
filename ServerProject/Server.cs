@@ -171,10 +171,19 @@ namespace ServerProject
                 }
                 // Connection is lost
                 LocalServerMessageEvent($"Client disconnected: {client.Client.RemoteEndPoint}");
+                //packet for broadcast 
+                Packet280 announcement = new Packet280();
+                announcement.ContentType = MessageType.Broadcast;
+                announcement.Payload = $"{_players.Find(p => p.Item1 == client.Client.RemoteEndPoint.ToString()).Item2} has left the server";
+                await BroadcastToAllClients(announcement);
+                // Remove the client from the list of clients
+                _clients.Remove(client);
             }
             catch (Exception ex)
             {
                 LocalServerMessageEvent($"Client disconnected: {client.Client.RemoteEndPoint} :: {ex.Message}");
+                // Remove the client from the list of clients
+                _clients.Remove(client);
             }
         }
 
@@ -216,9 +225,16 @@ namespace ServerProject
                         //add to the list of players
                         _players.Add(new Tuple<string, string>(client.Client.RemoteEndPoint.ToString(), tmpMessage.Payload));
 
+                        //packet for broadcast
+                        Packet280 announcement = new Packet280();
+                        announcement.ContentType = MessageType.Broadcast;
+                        announcement.Payload = $"{tmpMessage.Payload} has joined the server";
+                        await BroadcastToAllClients(announcement);
+
                         //broadcast to all clients the list of players
                         tmpMessage.Payload = JsonConvert.SerializeObject(GetPlayerList());
                         await BroadcastToAllClients(tmpMessage);
+
                         break;
                     }
 
@@ -226,12 +242,19 @@ namespace ServerProject
                     {
                         LocalServerMessageEvent("A client disconnected: " + client.Client.RemoteEndPoint);
 
+                        //packet for broadcast 
+                        Packet280 announcement = new Packet280();
+                        announcement.ContentType = MessageType.Broadcast;
+                        announcement.Payload = $"{_players.Find(p => p.Item1 == client.Client.RemoteEndPoint.ToString()).Item2} has left the server";
+                        await BroadcastToAllClients(announcement);
+
                         _players.Remove(_players.Find(p => p.Item1 == client.Client.RemoteEndPoint.ToString()));
                         tmpMessage.Payload = JsonConvert.SerializeObject(GetPlayerList());
                         //client has gracefully disconnected, so we remove them from the list
                         this._clients.Remove(client);
                         //remove the player from the list of players
                         await BroadcastToAllClients(tmpMessage);
+
                         break;
                     }
 
@@ -254,11 +277,6 @@ namespace ServerProject
                         if (CheckForWinner(board))
                         {
                             await SendWinLose(client, player);
-
-                            //broadcast to all clients the winner and loser
-                            Packet280 winPacket = new Packet280();
-                            winPacket.ContentType = MessageType.Win;
-
                             return;
                         }
                         else if (CheckForDraw(board))
@@ -378,6 +396,13 @@ namespace ServerProject
             //send the lose to the other player
             await BroadcastToClient(losePacket, otherPlayerClient);
 
+            //get client username
+            var clientPlayer = _players.Find(p => p.Item1 == client.Client.RemoteEndPoint.ToString()).Item2;
+
+            Packet280 announcement = new Packet280();
+            announcement.ContentType = MessageType.Broadcast;
+            announcement.Payload = $"{clientPlayer} won a round against {player}";
+            await BroadcastToAllClients(announcement);
         }
 
         private async Task SendDraw(TcpClient client, string player)
@@ -399,6 +424,14 @@ namespace ServerProject
 
             //send the draw to the other player
             await BroadcastToClient(drawPacket, otherPlayerClient);
+
+            //get client username
+            var clientPlayer = _players.Find(p => p.Item1 == client.Client.RemoteEndPoint.ToString()).Item2;
+
+            Packet280 announcement = new Packet280();
+            announcement.ContentType = MessageType.Broadcast;
+            announcement.Payload = $"{clientPlayer} draws a round with {player}!";
+            await BroadcastToAllClients(announcement);
         }
 
         private bool CheckForWinner(int[,] board)

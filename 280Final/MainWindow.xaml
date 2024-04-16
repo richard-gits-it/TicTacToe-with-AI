@@ -6,7 +6,7 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:local="clr-namespace:_280Final"
         mc:Ignorable="d"
-        Title="{Binding ConnectionStatus}" Height="600" Width="600" Closing="Window_Closing">
+        Title="{Binding ConnectionStatus}" Height="600" Width="800" Closing="Window_Closing">
     <Window.Resources>
         <!-- Square Button Style -->
         <Style x:Key="SquareButtonStyle" TargetType="Button">
@@ -36,9 +36,15 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="250"/>
+
         </Grid.ColumnDefinitions>
 
-
+        <StackPanel Grid.Column="2" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,10,10,30">
+            <Label Content="Server Dashboard" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+            <ListView Name="lstDashBoard" HorizontalAlignment="Left"  Height="500" Margin="10,0,0,0" VerticalAlignment="Top" Width="220" ItemsSource="{Binding Dashboard}" ScrollViewer.VerticalScrollBarVisibility="Disabled"/>
+        </StackPanel>
+        
         <StackPanel x:Name="stkUser">
 
             <StackPanel x:Name="stkUsername">
