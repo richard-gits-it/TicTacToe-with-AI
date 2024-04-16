@@ -192,7 +192,7 @@ namespace _280Final
             //check if client is already instantiated
             if (client == null)
             {
-                client = new Client("localhost", 10000);
+                client = new Client("172.18.31.118", 10000);
                 client.ReceivePacket += Client_ReceivePacket;
             }
 
@@ -326,7 +326,6 @@ namespace _280Final
             PlayerScore = 0;
             OpponentScore = 0;
             UpdateBoard(board);
-            MessageBox.Show("Challenge Accepted");
             var tmp = JsonConvert.DeserializeObject<Tuple<string, string>>(packet.Payload);
             _opponentPlayer = tmp.Item1;
             OnPropertyChanged("OpponentPlayer");
@@ -337,8 +336,10 @@ namespace _280Final
             OnPropertyChanged("OpponentPlayerSymbol");
             btnLeaveGame.IsEnabled = true;
             stkPlayers.IsEnabled = false;
+            stkUser.IsEnabled = false;
             Turn = $"It's {_opponentPlayer}'s turn.";
             OnPropertyChanged("Turn");
+            MessageBox.Show("Challenge Accepted");
         }
 
         private void HandleInvitePacket(Packet280 packet)
@@ -364,6 +365,7 @@ namespace _280Final
                     EnableBoard(true);
                     btnLeaveGame.IsEnabled = true;
                     stkPlayers.IsEnabled = false;
+                    stkUser.IsEnabled = false;
                     Turn = $"It's your turn.";
                     OnPropertyChanged("Turn");
                 }
@@ -449,6 +451,7 @@ namespace _280Final
             OnPropertyChanged("OpponentPlayerSymbol");
             btnLeaveGame.IsEnabled = false;
             stkPlayers.IsEnabled = true;
+            stkUser.IsEnabled = true;
             Turn = "";
             OnPropertyChanged("Turn");
             EnableBoard(false);
