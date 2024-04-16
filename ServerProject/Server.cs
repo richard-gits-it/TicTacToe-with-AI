@@ -254,6 +254,11 @@ namespace ServerProject
                         if (CheckForWinner(board))
                         {
                             await SendWinLose(client, player);
+
+                            //broadcast to all clients the winner and loser
+                            Packet280 winPacket = new Packet280();
+                            winPacket.ContentType = MessageType.Win;
+
                             return;
                         }
                         else if (CheckForDraw(board))

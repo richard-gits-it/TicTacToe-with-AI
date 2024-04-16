@@ -726,19 +726,6 @@ namespace _280Final
                 return;
             }
         }
-
-        private void Window_Closing(object sender, CancelEventArgs e)
-        {
-            if (client != null)
-                client.DisconnectClient();
-        }
-        #endregion
-
-        protected virtual void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
         private void btnPlay2_Click(object sender, RoutedEventArgs e)
         {
             StartAIGame(true);
@@ -760,6 +747,19 @@ namespace _280Final
             }
 
         }
+
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            if (client != null)
+                client.DisconnectClient();
+        }
+        #endregion
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
 
         private async void StartAIGame(bool first)
         {
