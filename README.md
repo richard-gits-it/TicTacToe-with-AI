@@ -52,5 +52,5 @@ Resources:
 ## Contact
 
 - Email: rj.lorenzo12@gmail.com
-- GitHub: richard-gits-it
-- LinkedIn: Richard Lorenzo
+- GitHub: [richard-gits-it](https://github.com/richard-gits-it)
+- LinkedIn: [Richard Lorenzo](https://www.linkedin.com/in/rj-lorenzo/)
