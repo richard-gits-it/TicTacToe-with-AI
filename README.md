@@ -1,6 +1,6 @@
 # Tic-Tac-Toe with AI & Multiplayer
 
-![Platform](https://img.shields.io/badge/platform-Windows-blue.svg) ![Framework](https://img.shields.io/badge/framework-WPF_.NET-blue.svg) ![Language](https://img.shields.io/badge/language-C%23-blue.svg)
+![Platform](https://img.shields.io/badge/platform-Windows-blue.svg) ![Framework](https://img.shields.io/badge/framework-WPF_.NET-blue.svg) ![Language](https://img.shields.io/badge/language-C%23-blue.svg) ![JSON](https://img.shields.io/badge/JSON-5.0-lightgrey.svg)
 
 ## Table of Contents
 - [Introduction](#introduction)
