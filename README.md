@@ -6,8 +6,8 @@
 - [Introduction](#introduction)
 - [Features](#features)
 - [Screenshots](#screenshots)
+- [Prerequisites](#prerequisites)
 - [Usage](#usage)
-- [Technologies Used](#technologies-used)
 - [Acknowledgements](#acknowledgements)
 - [Contact](#contact)
 
